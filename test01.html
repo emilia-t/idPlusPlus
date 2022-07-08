@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MutationObserver</title>
+</head>
+<body>
+<div id="box">
+  nnl
+</div>
+<button onclick="change()">sssssss</button>
+<script>
+  function change(){
+    let box=document.getElementById('box');
+    box.innerText="oooooo"
+  }
+  let box=document.getElementById('box');
+  let obServer=new MutationObserver((mutations) => {
+    console.log(mutations);
+  })
+  let  config={characterData:true,childList:true};
+  obServer.observe(box,config)
+</script>
+</body>
+</html>
