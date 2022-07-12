@@ -1,5 +1,6 @@
 var con=document.getElementById("con");
 var buttonBox=document.querySelectorAll(".buttonBox");
+var buttonType1=document.querySelectorAll(".bouttonType1");
 var stageTemp=null;
 const Set=Object.freeze({
   //初始化按钮
@@ -114,11 +115,57 @@ const Set=Object.freeze({
         }
       stageTemp=null;
     })
+  },
+  buttonType1Event:(element,button)=>{
+    chrome.storage.sync.get("button"+button,function(result){
+      if(Object.keys(result).length===0){
+        IdPlusPlus.buttonType1SetOn(button)
+      }else{
+        if(result.button0==="on"){
+          IdPlusPlus.buttonType1SetOff(button)
+        }else{
+          IdPlusPlus.buttonType1SetOn(button)
+        }
+      }
+    })
+  },
+  buttonType1SetOff:(button)=>{
+    switch (button) {
+      case 0:{
+        chrome.storage.sync.set({"button0":"off"},function(){
+
+        })
+        break;
+      }
+      default:{
+        break;
+      }
+    }
+    chrome.storage.sync.set()
+  },
+  buttonType1SetOn:(button)=>{
+    switch (button) {
+      case 0:{
+        chrome.storage.sync.set({"button0":"on"},function(){
+          
+        })
+        break;
+      }
+      default:{
+        break;
+      }
+    }
+    chrome.storage.sync.set()
   }
 })
 Set.startSetting();
 for (let i=0;i<buttonBox.length;i++){
   buttonBox[i].onclick=function (){
     Set.buttonClickEvent(buttonBox[i],i)
+  }
+}
+for (let i=0;i<buttonType1.length;i++){
+  buttonType1[i].onclick=function (){
+    Set.buttonType1Event(buttonType1[i],i)
   }
 }

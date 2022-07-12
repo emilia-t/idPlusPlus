@@ -104,9 +104,59 @@ var general_script={
 var IdPlusPlusConfig={
   historyPersistenceWatch:null,
   historyWatch:null,
-  historyLocalhost:[]
+  historyLocalhost:[],
+  historyLocalhostAll:[],
+  last:null
 }
 const IdPlusPlus=Object.freeze({
+  getHistory:()=>{
+    chrome.storage.sync.get("history",function (result){
+      IdPlusPlusConfig.historyLocalhost=result.history;
+    })
+    chrome.storage.sync.get("historyAll",function (result){
+      IdPlusPlusConfig.historyLocalhostAll=result.historyAll;
+    })
+  },
+  updateHistory:()=>{
+    //history obj
+    //{history:["w22323","n9983"]}
+    //{historyAll:["w87333","w93787"]}
+    //0.set obj
+    let HistorObj={
+      history:[],
+      historyAll:[]
+    }
+    HistorObj.history=IdPlusPlusConfig.historyLocalhost;
+    HistorObj.historyAll=IdPlusPlusConfig.historyLocalhostAll;
+    //1.get local history
+
+    chrome.storage.sync.set({"history":HistorObj.history},function (result){
+      general_script.alert_tips("updata done");
+      console.log(result);
+    })
+    chrome.storage.sync.set({"historyAll":HistorObj.historyAll},function (result){
+      general_script.alert_tips("updata done");
+      console.log(result);
+    })
+  },
+  clickCopyId:()=>{
+    let temp = document.getElementsByClassName("info-panels");
+    //console.log(temp);
+    if (temp.length != 0) {
+      temp[0].addEventListener("DOMSubtreeModified", () => {
+      let tag = document.getElementsByClassName("history-heading");
+      if (tag.length != 0) {
+          if (tag[0].innerText !== "" && tag[0].innerText !== "已选择0项"&& tag[0].innerText !== "0 selected") {
+              if (IdPlusPlusConfig.last != tag[0].innerText) {
+                  console.log("select: " + tag[0].innerText);
+                  navigator.clipboard.writeText(tag[0].innerText);
+                  IdPlusPlusConfig.last = tag[0].innerText;
+              }
+          }
+      }
+    });
+  }
+  },
   startSetting:()=>{
     chrome.storage.sync.get('history',function (result){
 
@@ -256,11 +306,12 @@ const IdPlusPlus=Object.freeze({
   upDateHistory:()=>{
     let box=document.querySelector('.IdPlusPlusPersistenceId');
     if(box!==undefined){
-      if(IdPlusPlusConfig.historyLocalhost.length===0){
+      //console.log(IdPlusPlusConfig)
+      if(IdPlusPlusConfig.historyLocalhost===null || IdPlusPlusConfig.historyLocalhost===undefined || IdPlusPlusConfig.historyLocalhost.length===0){
         box.innerText='等待选择';
         return false;
       }
-      box.innerText=IdPlusPlusConfig.historyLocalhost[IdPlusPlusConfig.historyLocalhost.length-1];
+      box.innerText=IdPlusPlusConfig.historyLocalhostAll[IdPlusPlusConfig.historyLocalhostAll.length-1];
     }
   },
   addHideLeftPanelButton:()=>{
@@ -282,41 +333,6 @@ const IdPlusPlus=Object.freeze({
     newDiv.style.borderRadius="6px";
     sideBarChild.appendChild(newDiv);
   },
-  watchHistoryOld:()=>{
-    if (IdPlusPlusConfig.historyWatch===null){
-      try {
-        setInterval(function (){
-          try {
-            let historyHeading=document.querySelector('.history-heading');
-            if(historyHeading===undefined){
-              return  false;
-            }
-            let Text=historyHeading.innerText;
-            if(Text.search(/已选择/)!==-1){
-              return false;
-            }
-            let lock=true;
-            for (let i=0;i<IdPlusPlusConfig.historyLocalhost.length;i++){
-              if(IdPlusPlusConfig.historyLocalhost[i]==Text){
-                lock=false;
-              }
-            }
-            if(lock===true){
-              console.log(IdPlusPlusConfig.historyLocalhost);
-              IdPlusPlusConfig.historyLocalhost.push(Text);
-              let box=document.querySelector('.IdPlusPlusHistoryBox');
-              box.innerText=IdPlusPlusConfig.historyLocalhost.toString();
-            }
-          }catch (e){
-
-          }
-
-          },10)
-      }catch (e) {
-        console.log(e)
-      }
-    }
-  },
   watchHistory:()=>{
     if (IdPlusPlusConfig.historyWatch===null){
       let config={characterData:true,childList:true,subtree:true};
@@ -334,6 +350,9 @@ const IdPlusPlus=Object.freeze({
           if(Text.search(/编辑者/)!==-1){
             return false;
           }
+          if(Text.search(/-/)!==-1){
+            return false;
+          }
           for (let i=0;i<IdPlusPlusConfig.historyLocalhost.length;i++){
             if(IdPlusPlusConfig.historyLocalhost[i]==Text){
               lock=false;
@@ -346,9 +365,10 @@ const IdPlusPlus=Object.freeze({
             //add to box innertext
             box.innerText=IdPlusPlusConfig.historyLocalhost.toString();
             //scrolltop
-            box.scrollTop=99999;
+            box.scrolltop=99999;
             console.log(box.scrolltop)
           }
+          IdPlusPlusConfig.historyLocalhostAll.push(Text);
         }catch (e) {
 
         }
@@ -365,4 +385,17 @@ setTimeout(
     IdPlusPlus.startSetting();
   },
 100)
+setTimeout(
+  function(){
+    IdPlusPlus.getHistory();
+},150)
+setTimeout(
+  function(){
+    IdPlusPlus.clickCopyId();
+  },
+200
+)
+setInterval(function(){
+  IdPlusPlus.upDateHistory();
+},10000)
 chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instruction(changes)})
