@@ -1,6 +1,6 @@
 var con=document.getElementById("con");
 var buttonBox=document.querySelectorAll(".buttonBox");
-var buttonType1=document.querySelectorAll(".bouttonType1");
+var buttonType1=document.querySelectorAll(".buttonType1");
 var stageTemp=null;
 const Set=Object.freeze({
   //初始化按钮
@@ -117,45 +117,32 @@ const Set=Object.freeze({
     })
   },
   buttonType1Event:(element,button)=>{
+    //暂时只有button0
     chrome.storage.sync.get("button"+button,function(result){
-      if(Object.keys(result).length===0){
-        IdPlusPlus.buttonType1SetOn(button)
-      }else{
-        if(result.button0==="on"){
-          IdPlusPlus.buttonType1SetOff(button)
+      function setOn(){
+        chrome.storage.sync.set({"button":"on"},function (){})
+      }
+      function setOff(){
+        chrome.storage.sync.set({"button":"off"},function (){})
+      }
+      if(result.button0===undefined){
+        setOn()
+        con.innerText="0";
+      }else {
+        if(Object.keys(result).length===0){
+          setOn()
+          con.innerText="1";
         }else{
-          IdPlusPlus.buttonType1SetOn(button)
+          if(result.button0==="on"){
+            setOff()
+            con.innerText="2";
+          }else{
+            setOn()
+            con.innerText="3";
+          }
         }
       }
     })
-  },
-  buttonType1SetOff:(button)=>{
-    switch (button) {
-      case 0:{
-        chrome.storage.sync.set({"button0":"off"},function(){
-
-        })
-        break;
-      }
-      default:{
-        break;
-      }
-    }
-    chrome.storage.sync.set()
-  },
-  buttonType1SetOn:(button)=>{
-    switch (button) {
-      case 0:{
-        chrome.storage.sync.set({"button0":"on"},function(){
-          
-        })
-        break;
-      }
-      default:{
-        break;
-      }
-    }
-    chrome.storage.sync.set()
   }
 })
 Set.startSetting();
