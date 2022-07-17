@@ -146,7 +146,7 @@ const IdPlusPlus=Object.freeze({
       temp[0].addEventListener("DOMSubtreeModified", () => {
       let tag = document.getElementsByClassName("history-heading");
       if (tag.length != 0) {
-          if (tag[0].innerText !== "" && tag[0].innerText !== "已选择0项"&& tag[0].innerText !== "0 selected") {
+          if (tag[0].innerText !== "" && tag[0].innerText !== "已选择0个"&& tag[0].innerText !== "0 selected") {
               if (IdPlusPlusConfig.last != tag[0].innerText) {
                   navigator.clipboard.writeText(tag[0].innerText);
                   IdPlusPlusConfig.last = tag[0].innerText;
