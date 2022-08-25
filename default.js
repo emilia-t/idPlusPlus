@@ -160,7 +160,7 @@ const IdPlusPlus=Object.freeze({
     chrome.storage.sync.get('history',function (result){
 
     })
-    chrome.storage.sync.get(['option0','option1','option2','option3'],function (result){
+    chrome.storage.sync.get(['option0','option1','option2','option3','option4'],function (result){
       if(result.option0==true){
         IdPlusPlus.option0On();
       }else {
@@ -180,6 +180,11 @@ const IdPlusPlus=Object.freeze({
         IdPlusPlus.option3On();
       }else {
         IdPlusPlus.option3Off();
+      }
+      if(result.option4==true){
+        IdPlusPlus.option4On();
+      }else {
+        IdPlusPlus.option4Off();
       }
     })
   },
@@ -301,6 +306,12 @@ const IdPlusPlus=Object.freeze({
     }catch (e){
       console.log(e)
     }
+  },
+  option4On:()=>{
+
+  },
+  option4Off:()=>{
+
   },
   upDateHistory:()=>{
     try{
