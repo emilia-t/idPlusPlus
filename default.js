@@ -109,36 +109,6 @@ var IdPlusPlusConfig={
   last:null
 }
 const IdPlusPlus=Object.freeze({
-  getHistory:()=>{
-    chrome.storage.sync.get("history",function (result){
-      IdPlusPlusConfig.historyLocalhost=result.history;
-    })
-    chrome.storage.sync.get("historyAll",function (result){
-      IdPlusPlusConfig.historyLocalhostAll=result.historyAll;
-    })
-  },
-  updateHistory:()=>{
-    //history obj
-    //{history:["w22323","n9983"]}
-    //{historyAll:["w87333","w93787"]}
-    //0.set obj
-    let HistorObj={
-      history:[],
-      historyAll:[]
-    }
-    HistorObj.history=IdPlusPlusConfig.historyLocalhost;
-    HistorObj.historyAll=IdPlusPlusConfig.historyLocalhostAll;
-    //1.get local history
-
-    chrome.storage.sync.set({"history":HistorObj.history},function (result){
-      general_script.alert_tips("updata done");
-      console.log(result);
-    })
-    chrome.storage.sync.set({"historyAll":HistorObj.historyAll},function (result){
-      general_script.alert_tips("updata done");
-      console.log(result);
-    })
-  },
   clickCopyId:()=>{
     let temp = document.getElementsByClassName("info-panels");
     //console.log(temp);
@@ -308,10 +278,48 @@ const IdPlusPlus=Object.freeze({
     }
   },
   option4On:()=>{
-
+    console.log("op4-on");
+    IdPlusPlus.addNewMask();
   },
   option4Off:()=>{
+    console.log("op4-off");
+  },
+  //添加新的蒙版
+  addNewMask:()=>{
+    //1.蒙版html
+    let MaskHtml=document.createElement('DIV');
+    MaskHtml.className='IdPlusPlusMaskBox';
+    document.body.appendChild(MaskHtml);
+  },
+  getHistory:()=>{
+    chrome.storage.sync.get("history",function (result){
+      IdPlusPlusConfig.historyLocalhost=result.history;
+    })
+    chrome.storage.sync.get("historyAll",function (result){
+      IdPlusPlusConfig.historyLocalhostAll=result.historyAll;
+    })
+  },
+  updateHistory:()=>{
+    //history obj
+    //{history:["w22323","n9983"]}
+    //{historyAll:["w87333","w93787"]}
+    //0.set obj
+    let HistorObj={
+      history:[],
+      historyAll:[]
+    }
+    HistorObj.history=IdPlusPlusConfig.historyLocalhost;
+    HistorObj.historyAll=IdPlusPlusConfig.historyLocalhostAll;
+    //1.get local history
 
+    chrome.storage.sync.set({"history":HistorObj.history},function (result){
+      general_script.alert_tips("updata done");
+      console.log(result);
+    })
+    chrome.storage.sync.set({"historyAll":HistorObj.historyAll},function (result){
+      general_script.alert_tips("updata done");
+      console.log(result);
+    })
   },
   upDateHistory:()=>{
     try{
