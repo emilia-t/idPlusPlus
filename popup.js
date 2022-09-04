@@ -5,7 +5,7 @@ var stageTemp=null;
 const Set=Object.freeze({
   //初始化按钮
   startSetting:()=>{
-    chrome.storage.sync.get(['option0','option1','option2','option3'],function (result){
+    chrome.storage.sync.get(['option0','option1','option2','option3','option4'],function (result){
       if (result!=null){
         if(result.option0==true){
           buttonBox[0].style.background="#3590ff";
@@ -35,6 +35,13 @@ const Set=Object.freeze({
           buttonBox[3].style.background="#cbccce";
           buttonBox[3].style.justifyContent="left";
         }
+        if(result.option4==true){
+          buttonBox[4].style.background="#3590ff";
+          buttonBox[4].style.justifyContent="right";
+        }else {
+          buttonBox[4].style.background="#cbccce";
+          buttonBox[4].style.justifyContent="left";
+        }
       }
     })
   },
@@ -55,6 +62,10 @@ const Set=Object.freeze({
       }
       case 3:{
         chrome.storage.sync.set({"option3":price},function (){});
+        break;
+      }
+      case 4:{
+        chrome.storage.sync.set({"option4":price},function (){});
         break;
       }
       default:{
