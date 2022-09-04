@@ -1,13 +1,26 @@
+//模拟按钮状态
+var stageTemp=null;
+//通用脚本
 var general_script={
 //General_script version:1.1
 //常用变量：
   ServerNetworkAddress:location.origin,
+//缓存：
+  GS_data:{
+    openHotKey:true,//是否启用快捷键
+    hotKey:{twoKey:[],//双键[int,int,]
+      threeKey:[]},//三键,暂未启用[int,int,int]
+    hotKeyDown:[],//按下的键位cache
+    hotKeyUp:[]//松开的键位cache
+  },
 //函数运行日志
   GS_log:{
     'alert_tips':{'work_num':0,'error_num':0,'error_log':null,default_config:{positionX:0,positionY:62,height:32,border:5,zh_font_width:24,en_font_width:9,font_size:16,life_time:50000}},
     'addNewStyle':{'work_num':0,'error_num':0,'error_log':null,default_config:null},
     'copy_p':{'work_num':0,'error_num':0,'error_log':null,default_config:null},
     'setMenuRAnimation':{'work_num':0,'error_num':0,'error_log':null,default_config:null},
+    'hotKeyHandler':{'work_num':0,'error_num':0,'error_log':null,default_config:null},
+    'keyboardListen':{'work_num':0,'error_num':0,'error_log':null,default_config:null},
   },
 //常用函数：
 //消息弹窗，无需任何CSS,HTML
@@ -100,45 +113,145 @@ var general_script={
       this.GS_log.copy_p.error_log=e;
     }
   },
+//热键绑定器
+//参数详解：tag->['ctrl','shift','alt']，value1->[a~z],func->a function,value2是冗余用的
+  hotKeyHandler(tag,value1,func,value2){
+    try {
+      ///添加快捷键配置
+      //主键
+      let MainKey=undefined;
+      switch (tag){
+        case 'shift':{MainKey=16;break;}
+        case 'ctrl':{MainKey=17;break;}
+        case 'alt':{MainKey=18;break;}
+        default:{break;}
+      }
+      //副键1
+      let otherKey1=undefined;
+      switch (value1){
+        case 'a':{otherKey1=65;break;}
+        case 'b':{otherKey1=66;break;}
+        case 'c':{otherKey1=67;break;}
+        case 'd':{otherKey1=68;break;}
+        case 'e':{otherKey1=69;break;}
+        case 'f':{otherKey1=70;break;}
+        case 'g':{otherKey1=71;break;}
+        case 'h':{otherKey1=72;break;}
+        case 'i':{otherKey1=73;break;}
+        case 'j':{otherKey1=74;break;}
+        case 'k':{otherKey1=75;break;}
+        case 'l':{otherKey1=76;break;}
+        case 'm':{otherKey1=77;break;}
+        case 'n':{otherKey1=78;break;}
+        case 'o':{otherKey1=79;break;}
+        case 'p':{otherKey1=80;break;}
+        case 'q':{otherKey1=81;break;}
+        case 'r':{otherKey1=82;break;}
+        case 's':{otherKey1=83;break;}
+        case 't':{otherKey1=84;break;}
+        case 'u':{otherKey1=85;break;}
+        case 'v':{otherKey1=86;break;}
+        case 'w':{otherKey1=87;break;}
+        case 'x':{otherKey1=88;break;}
+        case 'y':{otherKey1=89;break;}
+        case 'z':{otherKey1=90;break;}
+        default:{break;}
+      }
+      //添加配置
+      general_script.GS_data.hotKey.twoKey.push([MainKey,otherKey1,func]);
+      this.GS_log.hotKeyHandler.work_num++;
+    }catch (e) {
+      this.GS_log.hotKeyHandler.error_num++;
+      this.GS_log.hotKeyHandler.error_log=e;
+    }
+  },
+  //快捷键监听
+  keyboardListen() {
+    try{
+    ///按下时候开始计算，直到最后一个按键松开为止清空缓存,这里如果不开启热键功能openHotKey则无法收集按下的键
+    document.onkeydown = function (e) {
+      if(general_script.GS_data.openHotKey===true){general_script.GS_data.hotKeyDown.push(e.keyCode);}
+    };
+    ///触发开启监听
+    document.onkeyup = function (e) {
+      //查看缓存下有几个按键被按下
+      let downKeyNum = general_script.GS_data.hotKeyDown.length;
+      switch (downKeyNum) {
+        case 1: {//一个：不处理
+          //不论是否成功清空缓存
+          general_script.GS_data.hotKeyDown=[];
+          general_script.GS_data.hotKeyUp=[];
+          console.log(general_script.GS_data.hotKeyDown)
+          console.log("1个");
+          break;
+        }
+        case 2: {//两个：
+          let clock = general_script.GS_data.hotKeyDown.includes(e.keyCode);
+          if (clock) {//松开的是其中的一个，记录当前松开的key，并判断up数组内是否足够两个
+            general_script.GS_data.hotKeyUp.push(e.keyCode);
+            if (general_script.GS_data.hotKeyUp.length === 2) {//如果足够两个，开始搜索匹配的快捷键配置
+              for (let i = 0; i < general_script.GS_data.hotKey.twoKey.length; i++) {
+                let clock1 = general_script.GS_data.hotKey.twoKey[i].includes(general_script.GS_data.hotKeyUp[0])
+                let clock2 = general_script.GS_data.hotKey.twoKey[i].includes(general_script.GS_data.hotKeyUp[1])
+                if (clock1 === true && clock2 === true) {
+                  //立刻执行函数
+                  //console.log("热键正确触发");
+                  (function () {
+                    general_script.GS_data.hotKey.twoKey[i][2]()
+                  }())
+                  //不论是否成功清空缓存
+                  general_script.GS_data.hotKeyDown=[];
+                  general_script.GS_data.hotKeyUp=[];
+                }else {
+                  //不论是否成功清空缓存
+                  general_script.GS_data.hotKeyDown=[];
+                  general_script.GS_data.hotKeyUp=[];
+                }
+              }
+            }
+          }
+          console.log(general_script.GS_data.hotKeyDown)
+          console.log("2个");
+          break;
+        }
+        case 3: {//三个：暂不处理
+          //不论是否成功清空缓存
+          general_script.GS_data.hotKeyDown=[];
+          general_script.GS_data.hotKeyUp=[];
+          console.log(general_script.GS_data.hotKeyDown)
+          console.log("3个");
+          break;
+        }
+        default:{//超出预料外的按键做清除操作
+          //不论是否成功清空缓存
+          general_script.GS_data.hotKeyDown=[];
+          general_script.GS_data.hotKeyUp=[];
+        }
+      }
+      console.log("key up");
+      console.log(e);
+      console.log(general_script.GS_data.hotKeyDown);
+      console.log(general_script.GS_data.hotKeyUp);
+    };
+      this.GS_log.keyboardListen.work_num++;
+    }catch (e) {
+      this.GS_log.keyboardListen.error_num++;
+      this.GS_log.keyboardListen.error_log=e;
+    }
+  }
 }
+
+//id++插件配置
 var IdPlusPlusConfig={
   historyPersistenceWatch:null,
   historyWatch:null,
   historyLocalhost:[],
   historyLocalhostAll:[],
+  //自动拷贝功能专用
   last:null
 }
+//id++内置功能
 const IdPlusPlus=Object.freeze({
-  getHistory:()=>{
-    chrome.storage.sync.get("history",function (result){
-      IdPlusPlusConfig.historyLocalhost=result.history;
-    })
-    chrome.storage.sync.get("historyAll",function (result){
-      IdPlusPlusConfig.historyLocalhostAll=result.historyAll;
-    })
-  },
-  updateHistory:()=>{
-    //history obj
-    //{history:["w22323","n9983"]}
-    //{historyAll:["w87333","w93787"]}
-    //0.set obj
-    let HistorObj={
-      history:[],
-      historyAll:[]
-    }
-    HistorObj.history=IdPlusPlusConfig.historyLocalhost;
-    HistorObj.historyAll=IdPlusPlusConfig.historyLocalhostAll;
-    //1.get local history
-
-    chrome.storage.sync.set({"history":HistorObj.history},function (result){
-      general_script.alert_tips("updata done");
-      console.log(result);
-    })
-    chrome.storage.sync.set({"historyAll":HistorObj.historyAll},function (result){
-      general_script.alert_tips("updata done");
-      console.log(result);
-    })
-  },
   clickCopyId:()=>{
     let temp = document.getElementsByClassName("info-panels");
     //console.log(temp);
@@ -146,7 +259,7 @@ const IdPlusPlus=Object.freeze({
       temp[0].addEventListener("DOMSubtreeModified", () => {
       let tag = document.getElementsByClassName("history-heading");
       if (tag.length != 0) {
-          if (tag[0].innerText !== "" && tag[0].innerText !== "已选择0个" && tag[0].innerText !== "0 selected") {
+          if (tag[0].innerText !== "" && tag[0].innerText !== "已选择0个"&& tag[0].innerText !== "0 selected") {
               if (IdPlusPlusConfig.last != tag[0].innerText) {
                   navigator.clipboard.writeText(tag[0].innerText);
                   IdPlusPlusConfig.last = tag[0].innerText;
@@ -160,7 +273,7 @@ const IdPlusPlus=Object.freeze({
     chrome.storage.sync.get('history',function (result){
 
     })
-    chrome.storage.sync.get(['option0','option1','option2','option3'],function (result){
+    chrome.storage.sync.get(['option0','option1','option2','option3','option4'],function (result){
       if(result.option0==true){
         IdPlusPlus.option0On();
       }else {
@@ -180,6 +293,11 @@ const IdPlusPlus=Object.freeze({
         IdPlusPlus.option3On();
       }else {
         IdPlusPlus.option3Off();
+      }
+      if(result.option4==true){
+        IdPlusPlus.option4On();
+      }else {
+        IdPlusPlus.option4Off();
       }
     })
   },
@@ -215,6 +333,14 @@ const IdPlusPlus=Object.freeze({
             IdPlusPlus.option3On();
           }else {
             IdPlusPlus.option3Off();
+          }
+          break;
+        }
+        case "option4":{
+          if(request.option4.newValue===true){
+            IdPlusPlus.option4On();
+          }else {
+            IdPlusPlus.option4Off();
           }
           break;
         }
@@ -302,6 +428,129 @@ const IdPlusPlus=Object.freeze({
       console.log(e)
     }
   },
+  option4On:()=>{
+    console.log("op4-on");
+    IdPlusPlus.openMask();
+  },
+  option4Off:()=>{
+    console.log("op4-off");
+    IdPlusPlus.closeMask();
+  },
+  //发送一条开/关指令
+  sendCommit:(option)=>{
+    //1获取当前缓存option状态
+    chrome.storage.sync.get("option"+option,function (result){
+      if(Object.keys(result).length===0){
+        //初始状态
+        stageTemp=false;
+      }else {
+        Object.keys(result).forEach(function (key){
+          //获取历史状态
+          if(result[key]!==undefined){
+            stageTemp=result[key];
+          }else {
+            stageTemp=false;
+          }
+        })
+      }
+      //取反
+      IdPlusPlus.optionReverse(option);
+      stageTemp=null;
+    })
+  },
+  //为某一option取反
+  optionReverse:(option)=>{
+    //2取反
+    let newOptionStage=!stageTemp;
+    //3设置新的值
+    IdPlusPlus.setOptionStage(option,newOptionStage);
+  },
+  //设置某一个选项的值
+  setOptionStage:(option,price)=>{
+    switch (option){
+      case 0:{
+        chrome.storage.sync.set({"option0":price},function (){});
+        break;
+      }
+      case 1:{
+        chrome.storage.sync.set({"option1":price},function (){});
+        break;
+      }
+      case 2:{
+        chrome.storage.sync.set({"option2":price},function (){});
+        break;
+      }
+      case 3:{
+        chrome.storage.sync.set({"option3":price},function (){});
+        break;
+      }
+      case 4:{
+        chrome.storage.sync.set({"option4":price},function (){});
+        break;
+      }
+      default:{
+        break;
+      }
+    }
+  },
+  //关闭所有蒙版
+  closeMask:()=>{
+    //1.获取蒙版
+    let Mask=document.getElementsByClassName('IdPlusPlusMaskBox');
+    for (let i=0;i<Mask.length;i++){
+      Mask[i].style.display='none';
+    }
+  },
+  //打开蒙版
+  openMask:()=>{
+    //1.获取蒙版
+    let Mask=document.getElementsByClassName('IdPlusPlusMaskBox');
+    //1.1获取不到蒙版则创建一个蒙版
+    if(Mask===undefined || Mask.length===0){
+      IdPlusPlus.addNewMask();
+      Mask=document.getElementsByClassName('IdPlusPlusMaskBox');
+    }
+    for (let i=0;i<Mask.length;i++){
+      Mask[i].style.display='block';
+    }
+  },
+  //添加新的蒙版
+  addNewMask:()=>{
+    //1.蒙版html
+    let MaskHtml=document.createElement('DIV');
+    MaskHtml.className='IdPlusPlusMaskBox';
+    document.body.appendChild(MaskHtml);
+  },
+  getHistory:()=>{
+    chrome.storage.sync.get("history",function (result){
+      IdPlusPlusConfig.historyLocalhost=result.history;
+    })
+    chrome.storage.sync.get("historyAll",function (result){
+      IdPlusPlusConfig.historyLocalhostAll=result.historyAll;
+    })
+  },
+  updateHistory:()=>{
+    //history obj
+    //{history:["w22323","n9983"]}
+    //{historyAll:["w87333","w93787"]}
+    //0.set obj
+    let HistorObj={
+      history:[],
+      historyAll:[]
+    }
+    HistorObj.history=IdPlusPlusConfig.historyLocalhost;
+    HistorObj.historyAll=IdPlusPlusConfig.historyLocalhostAll;
+    //1.get local history
+
+    chrome.storage.sync.set({"history":HistorObj.history},function (result){
+      general_script.alert_tips("updata done");
+      console.log(result);
+    })
+    chrome.storage.sync.set({"historyAll":HistorObj.historyAll},function (result){
+      general_script.alert_tips("updata done");
+      console.log(result);
+    })
+  },
   upDateHistory:()=>{
     try{
       let box=document.querySelector('.IdPlusPlusPersistenceId');
@@ -379,16 +628,25 @@ const IdPlusPlus=Object.freeze({
     }
   }
 })
+//应用层：
+//在加载结束后的0.1秒之后开启初始设定
 setTimeout(
   function (){
-    IdPlusPlus.addHideLeftPanelButton();
     IdPlusPlus.startSetting();
   },
 100)
+//加载结束后的0.2秒之后开启自动拷贝功能
 setTimeout(
   function(){
     IdPlusPlus.clickCopyId();
   },
 200
 )
+//实时监听popup传递指令
 chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instruction(changes)})
+//快捷键绑定
+general_script.hotKeyHandler('shift','q',function () {
+  IdPlusPlus.sendCommit(4)
+});
+//开启热键功能
+general_script.keyboardListen();
