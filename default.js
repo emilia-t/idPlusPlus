@@ -178,11 +178,6 @@ var general_script={
       let downKeyNum = general_script.GS_data.hotKeyDown.length;
       switch (downKeyNum) {
         case 1: {//一个：不处理
-          //不论是否成功清空缓存
-          general_script.GS_data.hotKeyDown=[];
-          general_script.GS_data.hotKeyUp=[];
-          console.log(general_script.GS_data.hotKeyDown)
-          console.log("1个");
           break;
         }
         case 2: {//两个：
@@ -210,16 +205,12 @@ var general_script={
               }
             }
           }
-          console.log(general_script.GS_data.hotKeyDown)
-          console.log("2个");
           break;
         }
         case 3: {//三个：暂不处理
           //不论是否成功清空缓存
           general_script.GS_data.hotKeyDown=[];
           general_script.GS_data.hotKeyUp=[];
-          console.log(general_script.GS_data.hotKeyDown)
-          console.log("3个");
           break;
         }
         default:{//超出预料外的按键做清除操作
@@ -228,10 +219,6 @@ var general_script={
           general_script.GS_data.hotKeyUp=[];
         }
       }
-      console.log("key up");
-      console.log(e);
-      console.log(general_script.GS_data.hotKeyDown);
-      console.log(general_script.GS_data.hotKeyUp);
     };
       this.GS_log.keyboardListen.work_num++;
     }catch (e) {
@@ -241,14 +228,21 @@ var general_script={
   }
 }
 
-//id++插件配置
+//id++插件配置，包含缓存
 var IdPlusPlusConfig={
   historyPersistenceWatch:null,
   historyWatch:null,
   historyLocalhost:[],
   historyLocalhostAll:[],
   //自动拷贝功能专用
-  last:null
+  last:null,
+  //是否启用拖动蒙版内的图像
+  openMaskImgDrag:true,
+  mask:{
+    moved:false,
+    elementStartPoint:{x:null,y:null},
+    mouseStartPoint:{x:null,y:null},
+  }
 }
 //id++内置功能
 const IdPlusPlus=Object.freeze({
@@ -380,7 +374,6 @@ const IdPlusPlus=Object.freeze({
       //history-heading
       Element.style.display="none";
     }catch (e){
-      console.log(e)
     }
   },
   option3On:()=>{
@@ -408,7 +401,7 @@ const IdPlusPlus=Object.freeze({
         },10)
       }
     }catch (e){
-      console.log(e)
+
     }
   },
   option3Off:()=>{
@@ -425,7 +418,7 @@ const IdPlusPlus=Object.freeze({
       clearInterval(IdPlusPlusConfig.historyPersistenceWatch);
       IdPlusPlusConfig.historyPersistenceWatch=null;
     }catch (e){
-      console.log(e)
+
     }
   },
   option4On:()=>{
@@ -500,18 +493,28 @@ const IdPlusPlus=Object.freeze({
     for (let i=0;i<Mask.length;i++){
       Mask[i].style.display='none';
     }
+    //2.获取蒙版控制面板
+    let MaskControl=document.getElementsByClassName('IdPlusPlusMaskControl');
+    for (let i=0;i<MaskControl.length;i++){
+      MaskControl[i].style.display='none';
+    }
   },
   //打开蒙版
   openMask:()=>{
-    //1.获取蒙版
+    //1.获取蒙版和蒙版控制面板
     let Mask=document.getElementsByClassName('IdPlusPlusMaskBox');
+    let MaskControl=document.getElementsByClassName('IdPlusPlusMaskControl');
     //1.1获取不到蒙版则创建一个蒙版
     if(Mask===undefined || Mask.length===0){
       IdPlusPlus.addNewMask();
       Mask=document.getElementsByClassName('IdPlusPlusMaskBox');
+      MaskControl=document.getElementsByClassName('IdPlusPlusMaskControl');
     }
     for (let i=0;i<Mask.length;i++){
       Mask[i].style.display='block';
+    }
+    for (let i=0;i<MaskControl.length;i++){
+      MaskControl[i].style.display='flex';
     }
   },
   //添加新的蒙版
@@ -519,8 +522,72 @@ const IdPlusPlus=Object.freeze({
     //1.蒙版html
     let MaskHtml=document.createElement('DIV');
     MaskHtml.className='IdPlusPlusMaskBox';
+    MaskHtml.setAttribute('contenteditable','true');
+    //设置禁止选择
+
+    MaskHtml.innerText='';
+    //添加控制器
+    let MaskControl=document.createElement('DIV');
+    MaskControl.className='IdPlusPlusMaskControl';
+    MaskControl.innerHTML='<div style="font-size: 18px;color: #ff7c95;display: flex;justify-content:space-around;flex-direction: column"><div>粘贴您的图片</div><div>试试拖动图像</div><div>别忘了快捷键</div></div>';
+    MaskControl.setAttribute('contenteditable','false');
+    //监听蒙版内的新增内容
+    MaskHtml.addEventListener('DOMSubtreeModified', (e)=>{
+      console.log(e);
+      //1.1如果内容是text则删除此内容
+      if(e.target.nodeName==='#text'){
+        e.target.parentElement.removeChild(e.target);
+      }else{//为插入的图像内容添加自由转换功能
+        //注意此处是为最近加入的1个元素添加
+        IdPlusPlus.addImageConversion(e.target.childNodes[e.target.childNodes.length-1]);
+      }
+    })
+    document.body.appendChild(MaskControl);
     document.body.appendChild(MaskHtml);
   },
+  //为某一个图像元素添加自由转换功能
+  addImageConversion:(ele)=>{
+    if(ele.nodeName!=='IMG'){//排除不是IMG的元素
+      return false
+    }else {
+      //0.对此图像添加默认CSS
+      ele.className='IdPlusPlusMaskImg';
+      //1.对此图像添加鼠标左键按下->鼠标移动->鼠标左键松开的图像移动事件
+      //当鼠标在此图像上按下时，记录此时鼠标的初始位置(x,y)
+      //当鼠标移动时记录此时的(xy)并根据初始位置计算所需要移动距离
+      //采用目标达成法：
+      //定义一个初始位置及
+      //然后在移动过程中不断靠近鼠标的位置，当达到之后结束移动
+      ele.addEventListener('mousedown',(e)=>{
+        IdPlusPlusConfig.mask.moved=true;
+        IdPlusPlusConfig.mask.mouseStartPoint.x=e.x;
+        IdPlusPlusConfig.mask.mouseStartPoint.y=e.y;
+        IdPlusPlusConfig.mask.elementStartPoint.x=e.target.offsetLeft;
+        IdPlusPlusConfig.mask.elementStartPoint.y=e.target.offsetTop;
+      });
+      //当鼠标按键松开时清除缓存
+      ele.addEventListener('mousemove',(e)=>{
+        if(IdPlusPlusConfig.mask.moved===true){
+          //获取鼠标当前位置
+          let nowMousePoint={x:e.x,y:e.y};
+          //计算元素应在的位置
+          let eleHasPoint={x:(IdPlusPlusConfig.mask.elementStartPoint.x)+(nowMousePoint.x-IdPlusPlusConfig.mask.mouseStartPoint.x),y:(IdPlusPlusConfig.mask.elementStartPoint.y)+(nowMousePoint.y-IdPlusPlusConfig.mask.mouseStartPoint.y)};
+          //设置元素
+          e.target.style.left=eleHasPoint.x+'px';
+          e.target.style.top=eleHasPoint.y+'px';
+        }
+      });
+      //在鼠标松开时清理缓存,并停止移动
+      ele.addEventListener('mouseup',(e)=>{
+        IdPlusPlusConfig.mask.moved=false;
+        IdPlusPlusConfig.mask.elementStartPoint.x=null;
+        IdPlusPlusConfig.mask.elementStartPoint.y=null;
+        IdPlusPlusConfig.mask.mouseStartPoint.x=null;
+        IdPlusPlusConfig.mask.mouseStartPoint.y=null;
+      })
+    }
+  },
+  //获取历史id
   getHistory:()=>{
     chrome.storage.sync.get("history",function (result){
       IdPlusPlusConfig.historyLocalhost=result.history;
@@ -544,11 +611,11 @@ const IdPlusPlus=Object.freeze({
 
     chrome.storage.sync.set({"history":HistorObj.history},function (result){
       general_script.alert_tips("updata done");
-      console.log(result);
+
     })
     chrome.storage.sync.set({"historyAll":HistorObj.historyAll},function (result){
       general_script.alert_tips("updata done");
-      console.log(result);
+
     })
   },
   upDateHistory:()=>{
@@ -645,7 +712,7 @@ setTimeout(
 //实时监听popup传递指令
 chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instruction(changes)})
 //快捷键绑定
-general_script.hotKeyHandler('shift','q',function () {
+general_script.hotKeyHandler('ctrl','q',function () {
   IdPlusPlus.sendCommit(4)
 });
 //开启热键功能

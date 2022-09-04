@@ -49,5 +49,6 @@
   border-radius: 10px;
   background   : #ededed;
 }
-.IdPlusPlusMaskBox{min-width: calc(100% - 400px);width: calc(100% - (100% / 3));height: calc(100% - 60px);background: rgba(194, 194, 194, 0.4);z-index: 9999999;position: fixed;top: 60px;left: calc(400px);display: block}
-
+.IdPlusPlusMaskBox{user-select: none;-ms-user-select: none;-webkit-user-select: none;overflow: hidden;min-width: calc(100% - 400px);width: calc(100% - (100% / 3));height: calc(100% - 60px);background: rgba(194, 194, 194, 0.4);z-index: 9999999;position: fixed;top: 60px;left: calc(400px);display: block}
+.IdPlusPlusMaskControl{display: flex;justify-content:space-around;flex-direction: column;align-items: center;width: 60px;height: 300px;position: fixed;left: 340px;top: 200px;background: rgba(229, 229, 229, 0.85);z-index: 9999999;border-radius: 8px}
+.IdPlusPlusMaskImg{user-select: none;-ms-user-select: none;-webkit-user-select: none;top:60px;left:400px;position: fixed;transform: rotate(0deg)}
