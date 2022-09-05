@@ -18,7 +18,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://cn.id.autox.tech/editor/*","https://atsw.top/*"],
+      "matches": ["https://cn.id.autox.tech/editor/*","https://www.baidu.com/*"],
       "js": ["default.js"],
       "css": ["default.css"],
       "run_at": "document_end"

@@ -195,14 +195,17 @@ var general_script={
                     general_script.GS_data.hotKey.twoKey[i][2]()
                   }())
                   //不论是否成功清空缓存
-                  general_script.GS_data.hotKeyDown=[];
-                  general_script.GS_data.hotKeyUp=[];
+                  //general_script.GS_data.hotKeyDown=[];
+                  //general_script.GS_data.hotKeyUp=[];
                 }else {
                   //不论是否成功清空缓存
-                  general_script.GS_data.hotKeyDown=[];
-                  general_script.GS_data.hotKeyUp=[];
+                  //general_script.GS_data.hotKeyDown=[];
+                  //general_script.GS_data.hotKeyUp=[];
                 }
               }
+              //不论是否成功清空缓存
+              general_script.GS_data.hotKeyDown=[];
+              general_script.GS_data.hotKeyUp=[];
             }
           }
           break;
@@ -243,7 +246,7 @@ var IdPlusPlusConfig={
     mouseStartPoint:{x:null,y:null},
   },
   //是否启用指针投影功能
-  openPointerProjection:true,
+  openPointerProjection:false,
   Projection:{
     moved:false,
     flash:500,//自动绘制指针的间隔单位毫秒
@@ -308,6 +311,12 @@ const IdPlusPlus=Object.freeze({
   instruction:(request)=>{
     Object.keys(request).forEach(function (key){
       switch (key){
+        case "point":{
+          let Pointer=request.point.newValue;//一个xy对象
+          //创建点
+          IdPlusPlus.addNewPointer(Pointer);
+          break;
+        }
         case "option0":{
           if(request.option0.newValue===true){
             IdPlusPlus.option0On();
@@ -723,13 +732,39 @@ const IdPlusPlus=Object.freeze({
     let Projection=document.createElement('DIV');
     Projection.className='IdPlusPlusProjection';
     document.body.appendChild(Projection);
+  },
+  //开启或关闭添加映射点
+  openProjection:()=>{
+    IdPlusPlusConfig.openPointerProjection=!IdPlusPlusConfig.openPointerProjection;
+  },
+  //为在鼠标click后添加一个点
+  listenClickAddPoint:()=>{
+    document.body.addEventListener('click',(e)=>{
+      if(IdPlusPlusConfig.openPointerProjection){
+        let pos={x:e.x,y:e.y};
+        //添加点
+        IdPlusPlusConfig.Projection.pointer.push(pos);
+        //在页面中添加点
+        IdPlusPlus.addNewPointer(pos);
+        //广播数据
+        chrome.storage.sync.set({"point":pos},function (){});
+      }
+    })
+  },
+  //在幕布上添加一个点
+  addNewPointer:(position)=>{
+    let Point=document.createElement('DIV');
+    Point.className='IdPlusPlusProjectionPoint';
+    Point.style.left=position.x+'px';
+    Point.style.top=position.y+'px';
+    document.body.appendChild(Point);
   }
 })
 //应用层：
 //在加载结束后的0.1秒之后开启初始设定
 setTimeout(function(){IdPlusPlus.startSetting();},100);
-//在加载结束后的0.15秒之后开启幕布
-setTimeout(function(){IdPlusPlus.addNewProjection();},150);
+//在加载结束后的0.15秒之后开启指针投影
+setTimeout(function(){IdPlusPlus.addNewProjection();IdPlusPlus.listenClickAddPoint();},150);
 //在加载结束后的0.2秒之后开启自动拷贝功能
 setTimeout(function(){IdPlusPlus.clickCopyId();},200);
 //实时监听popup传递指令
@@ -737,6 +772,6 @@ chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instr
 //快捷键绑定-开启遮罩蒙版
 general_script.hotKeyHandler('ctrl','q',function(){IdPlusPlus.sendCommit(4);});
 //快捷键绑定-创建单点指针映射
-general_script.hotKeyHandler('ctrl','x',function(){console.log('单点映射')});
+general_script.hotKeyHandler('ctrl','x',function(){IdPlusPlus.openProjection();});
 //开启热键功能
 general_script.keyboardListen();
