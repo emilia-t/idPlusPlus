@@ -227,7 +227,6 @@ var general_script={
     }
   }
 }
-
 //id++插件配置，包含缓存
 var IdPlusPlusConfig={
   historyPersistenceWatch:null,
@@ -242,10 +241,19 @@ var IdPlusPlusConfig={
     moved:false,
     elementStartPoint:{x:null,y:null},
     mouseStartPoint:{x:null,y:null},
+  },
+  //是否启用指针投影功能
+  openPointerProjection:true,
+  Projection:{
+    moved:false,
+    flash:500,//自动绘制指针的间隔单位毫秒
+    pointer:[],//单点的指针，使用快捷键创建
+    pointRap:[]//自动的连续的点
   }
 }
 //id++内置功能
 const IdPlusPlus=Object.freeze({
+  //拷贝id
   clickCopyId:()=>{
     let temp = document.getElementsByClassName("info-panels");
     //console.log(temp);
@@ -253,7 +261,7 @@ const IdPlusPlus=Object.freeze({
       temp[0].addEventListener("DOMSubtreeModified", () => {
       let tag = document.getElementsByClassName("history-heading");
       if (tag.length != 0) {
-          if (tag[0].innerText !== "" && tag[0].innerText != "已选择 0 个"&& tag[0].innerText !== "0 selected") {
+          if (tag[0].innerText !== "" && tag[0].innerText !== "已选择 0 个"&& tag[0].innerText !== "0 selected") {
               if (IdPlusPlusConfig.last != tag[0].innerText) {
                   navigator.clipboard.writeText(tag[0].innerText);
                   IdPlusPlusConfig.last = tag[0].innerText;
@@ -263,6 +271,7 @@ const IdPlusPlus=Object.freeze({
     });
   }
   },
+  //初始化设置
   startSetting:()=>{
     chrome.storage.sync.get('history',function (result){
 
@@ -295,6 +304,7 @@ const IdPlusPlus=Object.freeze({
       }
     })
   },
+  //命令接收器
   instruction:(request)=>{
     Object.keys(request).forEach(function (key){
       switch (key){
@@ -344,18 +354,23 @@ const IdPlusPlus=Object.freeze({
       }
     })
   },
+  //开关
   option0On:()=>{
     console.log("op0-on")
   },
+  //开关
   option0Off:()=>{
     console.log("op0-off")
   },
+  //开关
   option1On:()=>{
     console.log("op1-on")
   },
+  //开关
   option1Off:()=>{
     console.log("op1-off")
   },
+  //开关
   option2On:()=>{
     let box=document.querySelector('.IdPlusPlusHistoryBox');
     if(box===undefined || box===null){
@@ -368,6 +383,7 @@ const IdPlusPlus=Object.freeze({
     box.style.display='flex';
     IdPlusPlus.watchHistory();
   },
+  //开关
   option2Off:()=>{
     try {
       let Element=document.querySelector(".IdPlusPlusHistoryBox");
@@ -376,6 +392,7 @@ const IdPlusPlus=Object.freeze({
     }catch (e){
     }
   },
+  //开关
   option3On:()=>{
     console.log("op3-on");
     try {
@@ -404,6 +421,7 @@ const IdPlusPlus=Object.freeze({
 
     }
   },
+  //开关
   option3Off:()=>{
     console.log("op3-off");
     try {
@@ -421,10 +439,12 @@ const IdPlusPlus=Object.freeze({
 
     }
   },
+  //开关
   option4On:()=>{
     console.log("op4-on");
     IdPlusPlus.openMask();
   },
+  //开关
   option4Off:()=>{
     console.log("op4-off");
     IdPlusPlus.closeMask();
@@ -596,6 +616,7 @@ const IdPlusPlus=Object.freeze({
       IdPlusPlusConfig.historyLocalhostAll=result.historyAll;
     })
   },
+  //同步历史记录
   updateHistory:()=>{
     //history obj
     //{history:["w22323","n9983"]}
@@ -618,6 +639,7 @@ const IdPlusPlus=Object.freeze({
 
     })
   },
+  //同步历史记录
   upDateHistory:()=>{
     try{
       let box=document.querySelector('.IdPlusPlusPersistenceId');
@@ -634,6 +656,7 @@ const IdPlusPlus=Object.freeze({
     }
 
   },
+  //添加左侧关闭按钮
   addHideLeftPanelButton:()=>{
     let sidebar=document.getElementById("sidebar");
     let sideBarChild=sidebar.children[0].children[0];
@@ -653,6 +676,7 @@ const IdPlusPlus=Object.freeze({
     newDiv.style.borderRadius="6px";
     sideBarChild.appendChild(newDiv);
   },
+  //监听历史面板
   watchHistory:()=>{
     if (IdPlusPlusConfig.historyWatch===null){
       let config={characterData:true,childList:true,subtree:true};
@@ -693,28 +717,26 @@ const IdPlusPlus=Object.freeze({
       })
       newObServer.observe(info_panels,config)
     }
+  },
+  //添加一个新的指针投影背景
+  addNewProjection:()=>{
+    let Projection=document.createElement('DIV');
+    Projection.className='IdPlusPlusProjection';
+    document.body.appendChild(Projection);
   }
 })
 //应用层：
 //在加载结束后的0.1秒之后开启初始设定
-setTimeout(
-  function (){
-    IdPlusPlus.startSetting();
-  },
-100)
-//加载结束后的0.2秒之后开启自动拷贝功能
-setTimeout(
-  function(){
-    IdPlusPlus.clickCopyId();
-  },
-200
-)
+setTimeout(function(){IdPlusPlus.startSetting();},100);
+//在加载结束后的0.15秒之后开启幕布
+setTimeout(function(){IdPlusPlus.addNewProjection();},150);
+//在加载结束后的0.2秒之后开启自动拷贝功能
+setTimeout(function(){IdPlusPlus.clickCopyId();},200);
 //实时监听popup传递指令
-chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instruction(changes)})
-//快捷键绑定
-general_script.hotKeyHandler('ctrl','q',function () {
-  IdPlusPlus.sendCommit(4)
-});
+chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instruction(changes)});
+//快捷键绑定-开启遮罩蒙版
+general_script.hotKeyHandler('ctrl','q',function(){IdPlusPlus.sendCommit(4);});
+//快捷键绑定-创建单点指针映射
+general_script.hotKeyHandler('ctrl','x',function(){console.log('单点映射')});
 //开启热键功能
 general_script.keyboardListen();
-

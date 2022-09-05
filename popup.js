@@ -1,8 +1,28 @@
 var con=document.getElementById("con");
 var buttonBox=document.querySelectorAll(".buttonBox");
+var persistButtonBox=document.querySelectorAll(".persistButtonBox");
 var buttonType1=document.querySelectorAll(".buttonType1");
+var IdPlusPlusMotto=document.getElementById("IdPlusPlusMotto");
 var stageTemp=null;
+var IdPlusPlusMottoArr=['海内存知己，天涯若比邻','长亭外，古道边，芳草碧连天','高山仰行，景行行止','一条大河波浪宽，风吹稻花香两岸','他们都老了吧，他们在哪里呀，我们就这样，各自奔天涯','为世界上所有的美好而战','行到水穷处，坐看云起时','皑如山上雪，皎若云间月','黑白谁能用如玄，千回生死体方圆','天街小雨润如酥，草色遥看近却无','雄关漫道真如铁，而今迈步从头越','千里莺啼绿映红，水村山郭酒旗风', '我们总将会相遇，但不是今天，也不是明天','她踏上了旅途','临摹秀色千里冉，遥望星空万古光','妹说就是零卡！','在这里，死亡便是最大的恩赐','脸...脸都不要了','发生甚么事了！发生甚么事了！','三点几了，饮茶先啦','断了的弦在弹一遍'];
 const Set=Object.freeze({
+  //标题切换
+  mottoChange:()=>{
+    function randomNum(minNum,maxNum){
+      switch(arguments.length){
+        case 1:
+          return parseInt(Math.random()*minNum+1,10);
+          break;
+        case 2:
+          return parseInt(Math.random()*(maxNum-minNum+1)+minNum,10);
+          break;
+        default:
+          return 0;
+          break;
+      }
+    }
+    IdPlusPlusMotto.innerText=IdPlusPlusMottoArr[randomNum(0,IdPlusPlusMottoArr.length-1)];
+  },
   //初始化按钮
   startSetting:()=>{
     chrome.storage.sync.get(['option0','option1','option2','option3','option4'],function (result){
@@ -97,7 +117,7 @@ const Set=Object.freeze({
     //3设置新的值
     Set.setOptionStage(option,newOptionStage);
   },
-  //按钮事件
+  //switch按钮事件
   buttonClickEvent:(element,option)=>{
     //1获取当前缓存option状态
     chrome.storage.sync.get("option"+option,function (result){
@@ -126,44 +146,80 @@ const Set=Object.freeze({
         }
       stageTemp=null;
     })
+    con.innerText='咔哒';
   },
+  //长按钮事件
   buttonType1Event:(element,button)=>{
     //暂时只有button0
-    chrome.storage.sync.get("button"+button,function(result){
-      function setOn(){
-        chrome.storage.sync.set({"button":"on"},function (){})
-      }
-      function setOff(){
-        chrome.storage.sync.set({"button":"off"},function (){})
-      }
-      if(result.button0===undefined){
-        setOn()
-        con.innerText="0";
+    // chrome.storage.sync.get("button"+button,function(result){
+    //   function setOn(){
+    //     chrome.storage.sync.set({"button":"on"},function (){})
+    //   }
+    //   function setOff(){
+    //     chrome.storage.sync.set({"button":"off"},function (){})
+    //   }
+    //   if(result.button0===undefined){
+    //     setOn()
+    //     //con.innerText="0";
+    //   }else {
+    //     if(Object.keys(result).length===0){
+    //       setOn()
+    //       //con.innerText="1";
+    //     }else{
+    //       if(result.button0==="on"){
+    //         setOff()
+    //         //con.innerText="2";
+    //       }else{
+    //         setOn()
+    //         //con.innerText="3";
+    //       }
+    //     }
+    //   }
+    // })
+    con.innerText='已禁用此项功能(-_-)';
+  },
+  //不可东按钮事件
+  persistButtonBoxEvent:(element)=>{
+    //1.添加动效
+    let num=element.getAttribute('num');
+    if(num==undefined || num==null){
+      element.setAttribute('num',1);
+      num=1;
+      element.className='persistButtonBoxA';
+      con.innerText='无法更改此项(-_-)';
+    }else {
+      if(num%2===1){
+        element.className='persistButtonBox';
+        num++;
+        element.setAttribute('num',num);
+        con.innerText='无法更改此项(_-_)';
       }else {
-        if(Object.keys(result).length===0){
-          setOn()
-          con.innerText="1";
-        }else{
-          if(result.button0==="on"){
-            setOff()
-            con.innerText="2";
-          }else{
-            setOn()
-            con.innerText="3";
-          }
-        }
+        element.className='persistButtonBoxA';
+        num++;
+        element.setAttribute('num',num);
+        con.innerText='无法更改此项(-_-)';
       }
-    })
+
+    }
   }
 })
 Set.startSetting();
+Set.mottoChange();
+//设置switch按钮功能
 for (let i=0;i<buttonBox.length;i++){
   buttonBox[i].onclick=function (){
     Set.buttonClickEvent(buttonBox[i],i)
   }
 }
+//设置长按钮功能
 for (let i=0;i<buttonType1.length;i++){
   buttonType1[i].onclick=function (){
     Set.buttonType1Event(buttonType1[i],i)
+  }
+}
+//设置不可修改按钮功能
+for (let i=0;i<persistButtonBox.length;i++){
+  persistButtonBox[i].onclick=function (){
+    Set.persistButtonBoxEvent(persistButtonBox[i])
   }
 }

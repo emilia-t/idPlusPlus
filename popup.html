@@ -11,13 +11,32 @@
     /**/
     .buttonBox{transition: 0.8s;width: 50px;height: 25px;border-radius: 25px;display: flex;}
     .circle{background: white;width: 21px;height: 21px;border-radius: 21px;margin: 2px}
+    .buttonType1{color: #535353}
+    /*保持开启按钮样式*/
+    .persistList{display: flex;justify-content: space-between;margin: 10px 0px}
+    .persistCircle{background: white;width: 21px;height: 21px;border-radius: 21px;margin: 2px}
+    .persistCircleA{background: white;width: 21px;height: 21px;border-radius: 21px;margin: 2px}
+    .persistButtonBox{animation:persistButtonBox 0.8s forwards;width: 50px;height: 25px;border-radius: 25px;display: flex;justify-content:right}
+    .persistButtonBoxA{animation:persistButtonBoxA 0.8s forwards;width: 50px;height: 25px;border-radius: 25px;display: flex;justify-content:right}
+    @keyframes persistButtonBox {
+      0%{background:#2d2d2d}
+      50%{background: #3590ff
+      }
+      100%{background:#2d2d2d}
+    }
+    @keyframes persistButtonBoxA {
+      0%{background:#2d2d2d}
+      50%{background: #3585fe
+      }
+      100%{background:#2d2d2d}
+    }
   </style>
 </head>
 <body>
 <!--head-->
   <div class="pageMenu">
-    <h2>海内存知己，天涯若比邻</h2>
-    <h3>ID ++ @Minxi Wan</h3>
+    <h2>ID++</h2>
+    <h4 id="IdPlusPlusMotto">海内存知己，天涯若比邻</h4>
   </div>
   <p>功能开关</p>
   <div class="menu">
@@ -51,9 +70,15 @@
         <div class="circle"></div>
       </div>
     </div>
-    <button class="buttonType1">同步历史记录</button>
+    <div class="persistList">
+      <div>启用指针投影(Ctrl+X)</div>
+      <div class="persistButtonBox">
+        <div class="persistCircle"></div>
+      </div>
+    </div>
+    <button class="buttonType1">同步历史记录(已禁用)</button>
   </div>
-<div id="con">应答消息</div>
+<div id="con">Tip:按钮有声音哦</div>
 <script src="popup.js"></script>
 </body>
 </html>
