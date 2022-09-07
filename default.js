@@ -773,12 +773,80 @@ const IdPlusPlus=Object.freeze({
   },
   //在幕布上添加一个点
   addNewPointer:(position)=>{
+    //第一次使用时添加控制面板
+    let dom=document.querySelector('.IdPlusPlusProjectionControl')
+    if(dom==undefined){
+      IdPlusPlus.addProjectionControl();
+    }else {
+      if(dom.classList.contains('IdPlusPlusProjectionControlHide')){
+        dom.classList.remove('IdPlusPlusProjectionControlHide');
+      }
+    }
+    //添加一个点
     let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjection');
     let Point=document.createElement('DIV');
     Point.className='IdPlusPlusProjectionPoint';
     Point.style.left=position.x+'px';
     Point.style.top=position.y+'px';
     IdPlusPlusProjection.appendChild(Point);
+  },
+  //将幕布上的点全部清空
+  delProjectionPoints:()=>{
+    let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjection');
+    IdPlusPlusProjection.innerHTML='';
+  },
+  //隐藏控制面板到顶部
+  hideProjectionControl:()=>{
+    let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjectionControl');
+    IdPlusPlusProjection.classList.add('IdPlusPlusProjectionControlHide');
+  },
+  //在幕布上悬浮一个控制面板
+  addProjectionControl:()=>{
+    //创建总外框
+    let newDiv=document.createElement('DIV');
+    newDiv.className='IdPlusPlusProjectionControl';
+    let btn1=IdPlusPlus.createProjectionControlBtn('撤回',1);
+    let btn2=IdPlusPlus.createProjectionControlBtn('前进',2);
+    let btn3=IdPlusPlus.createProjectionControlBtn('清空',3);
+    let btn4=IdPlusPlus.createProjectionControlBtn('隐藏我',4);
+    newDiv.appendChild(btn1);
+    newDiv.appendChild(btn2);
+    newDiv.appendChild(btn3);
+    newDiv.appendChild(btn4);
+    document.body.appendChild(newDiv);
+  },
+  //创建按钮,需要传递按钮名字及按钮序号，返回按钮元素
+  createProjectionControlBtn:(text,num)=>{
+    let btn=document.createElement('DIV');
+    btn.className='IdPlusPlusProjectionControlBtn';
+    btn.innerText=text;
+    btn.addEventListener('click',()=>{
+      if(btn.classList.contains('IdPlusPlusProjectionAnimation002')){
+        btn.classList.add('IdPlusPlusProjectionAnimation001');
+        btn.classList.remove('IdPlusPlusProjectionAnimation002');
+      }else {
+        btn.classList.add('IdPlusPlusProjectionAnimation002');
+        btn.classList.remove('IdPlusPlusProjectionAnimation001');
+      }
+    })
+    //添加相应的功能
+    switch (num){
+      case 1:{
+        break;
+      }
+      case 2:{
+        break;
+      }
+      case 3:{
+        btn.addEventListener('click',()=>{IdPlusPlus.delProjectionPoints();});
+        break;
+      }
+      case 4:{
+        btn.addEventListener('click',()=>{IdPlusPlus.hideProjectionControl();});
+        break;
+      }
+    }
+    return btn;
   }
 })
 //应用层：
