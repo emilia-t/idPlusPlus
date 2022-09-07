@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name":"ID plus plus",
-  "version": "1.0.2",
+  "version": "1.0.2.6",
   "description": "ID++",
   "icons": {
     "128": "img/icon128.png",
@@ -18,7 +18,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://cn.id.autox.tech/editor/*","https://szexa.xray.autox.tech/*"],
+      "matches": ["https://cn.id.autox.tech/editor/*","https://www.baidu.com/*"],
       "js": ["default.js"],
       "css": ["default.css"],
       "run_at": "document_end"

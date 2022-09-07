@@ -737,6 +737,26 @@ const IdPlusPlus=Object.freeze({
   openProjection:()=>{
     IdPlusPlusConfig.openPointerProjection=!IdPlusPlusConfig.openPointerProjection;
   },
+  //显示或隐藏投影幕布
+  hideProjectionCurtain:()=>{
+    let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjection');
+    let Tp=parseInt(IdPlusPlusProjection.getAttribute('type'));
+    console.log(Tp);
+    if(isNaN(Tp)){
+      IdPlusPlusProjection.setAttribute('type','1');
+      IdPlusPlusProjection.style.display='none';
+    }else {
+      if(Tp%2==0){
+        Tp++;
+        IdPlusPlusProjection.setAttribute('type',Tp+'');
+        IdPlusPlusProjection.style.display='none';
+      }else {
+        Tp++;
+        IdPlusPlusProjection.setAttribute('type',Tp+'');
+        IdPlusPlusProjection.style.display='block';
+      }
+    }
+  },
   //为在鼠标click后添加一个点
   listenClickAddPoint:()=>{
     document.body.addEventListener('click',(e)=>{
@@ -753,11 +773,12 @@ const IdPlusPlus=Object.freeze({
   },
   //在幕布上添加一个点
   addNewPointer:(position)=>{
+    let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjection');
     let Point=document.createElement('DIV');
     Point.className='IdPlusPlusProjectionPoint';
     Point.style.left=position.x+'px';
     Point.style.top=position.y+'px';
-    document.body.appendChild(Point);
+    IdPlusPlusProjection.appendChild(Point);
   }
 })
 //应用层：
@@ -773,5 +794,7 @@ chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instr
 general_script.hotKeyHandler('ctrl','q',function(){IdPlusPlus.sendCommit(4);});
 //快捷键绑定-创建单点指针映射
 general_script.hotKeyHandler('ctrl','x',function(){IdPlusPlus.openProjection();});
+//快捷键绑定-开启或隐藏幕布
+general_script.hotKeyHandler('shift','x',function(){IdPlusPlus.hideProjectionCurtain();});
 //开启热键功能
 general_script.keyboardListen();
