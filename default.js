@@ -249,8 +249,9 @@ var IdPlusPlusConfig={
   openPointerProjection:false,
   Projection:{
     moved:false,
+    color:'#ff0000',
     flash:500,//自动绘制指针的间隔单位毫秒
-    pointer:[],//单点的指针，使用快捷键创建
+    pointer:[],//单点的指针，使用鼠标单机创建
     pointRap:[]//自动的连续的点
   }
 }
@@ -309,8 +310,22 @@ const IdPlusPlus=Object.freeze({
   },
   //命令接收器
   instruction:(request)=>{
+    console.log("change:");
+    console.log(request);
     Object.keys(request).forEach(function (key){
       switch (key){
+        case "hideProjectionControl":{//隐藏幕布控制面板
+          IdPlusPlus.hideProjectionControl();
+          break;
+        }
+        case "delProjectionPoints":{//删除所有的点
+          IdPlusPlus.delProjectionPoints();
+          break;
+        }
+        case "removePointer":{//删除最新的一个点
+          IdPlusPlus.removePointer();
+          break;
+        }
         case "point":{
           let Pointer=request.point.newValue;//一个xy对象
           //创建点
@@ -365,19 +380,19 @@ const IdPlusPlus=Object.freeze({
   },
   //开关
   option0On:()=>{
-    console.log("op0-on")
+    //console.log("op0-on")
   },
   //开关
   option0Off:()=>{
-    console.log("op0-off")
+    //console.log("op0-off")
   },
   //开关
   option1On:()=>{
-    console.log("op1-on")
+    //console.log("op1-on")
   },
   //开关
   option1Off:()=>{
-    console.log("op1-off")
+    //console.log("op1-off")
   },
   //开关
   option2On:()=>{
@@ -403,7 +418,7 @@ const IdPlusPlus=Object.freeze({
   },
   //开关
   option3On:()=>{
-    console.log("op3-on");
+    //console.log("op3-on");
     try {
       let box=document.querySelector('.IdPlusPlusPersistenceId');
       if (box===undefined || box===null){
@@ -432,7 +447,7 @@ const IdPlusPlus=Object.freeze({
   },
   //开关
   option3Off:()=>{
-    console.log("op3-off");
+    //console.log("op3-off");
     try {
       let box=document.querySelector('.IdPlusPlusPersistenceId');
       if (box===undefined || box===null){
@@ -450,15 +465,37 @@ const IdPlusPlus=Object.freeze({
   },
   //开关
   option4On:()=>{
-    console.log("op4-on");
+    //console.log("op4-on");
     IdPlusPlus.openMask();
   },
   //开关
   option4Off:()=>{
-    console.log("op4-off");
+    //console.log("op4-off");
     IdPlusPlus.closeMask();
   },
-  //发送一条开/关指令
+  //发送一条执行指令-立刻执行一个函数
+  sendInstruct:(name)=>{
+    //发送
+    switch (name){
+      case 'removePointer':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'removePointer':ran},function (){})
+        break;
+      }
+      case 'delProjectionPoints':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'delProjectionPoints':ran},function (){})
+        break;
+      }
+      case 'hideProjectionControl':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'hideProjectionControl':ran},function (){})
+        break;
+      }
+    }
+
+  },
+  //发送一条开/关指令-在0和1之间转换
   sendCommit:(option)=>{
     //1获取当前缓存option状态
     chrome.storage.sync.get("option"+option,function (result){
@@ -771,6 +808,11 @@ const IdPlusPlus=Object.freeze({
       }
     })
   },
+  //删除最近的一个点
+  removePointer:()=>{
+    let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjection');
+    IdPlusPlusProjection.removeChild(IdPlusPlusProjection.lastChild);
+  },
   //在幕布上添加一个点
   addNewPointer:(position)=>{
     //第一次使用时添加控制面板
@@ -782,13 +824,17 @@ const IdPlusPlus=Object.freeze({
         dom.classList.remove('IdPlusPlusProjectionControlHide');
       }
     }
+    //在添加点的时候检测本身是否已经含有同样的点,如果有就不再添加
     //添加一个点
-    let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjection');
-    let Point=document.createElement('DIV');
-    Point.className='IdPlusPlusProjectionPoint';
-    Point.style.left=position.x+'px';
-    Point.style.top=position.y+'px';
-    IdPlusPlusProjection.appendChild(Point);
+    if(IdPlusPlusConfig.Projection.pointer.includes(position)==false){
+      let IdPlusPlusProjection=document.querySelector('.IdPlusPlusProjection');
+      let Point=document.createElement('DIV');
+      Point.className='IdPlusPlusProjectionPoint';
+      Point.style.background=IdPlusPlusConfig.Projection.color;
+      Point.style.left=position.x+'px';
+      Point.style.top=position.y+'px';
+      IdPlusPlusProjection.appendChild(Point);
+    }
   },
   //将幕布上的点全部清空
   delProjectionPoints:()=>{
@@ -805,15 +851,47 @@ const IdPlusPlus=Object.freeze({
     //创建总外框
     let newDiv=document.createElement('DIV');
     newDiv.className='IdPlusPlusProjectionControl';
-    let btn1=IdPlusPlus.createProjectionControlBtn('撤回',1);
-    let btn2=IdPlusPlus.createProjectionControlBtn('前进',2);
+    let color=IdPlusPlus.createProjectionControlColor();
+    let btn2=IdPlusPlus.createProjectionControlBtn('撤回',2);
     let btn3=IdPlusPlus.createProjectionControlBtn('清空',3);
     let btn4=IdPlusPlus.createProjectionControlBtn('隐藏我',4);
-    newDiv.appendChild(btn1);
+    newDiv.appendChild(color);
     newDiv.appendChild(btn2);
     newDiv.appendChild(btn3);
     newDiv.appendChild(btn4);
     document.body.appendChild(newDiv);
+  },
+  //创建一个色块，显示当前配置颜色和可选颜色
+  createProjectionControlColor:()=>{
+    //外壳
+    let Div=document.createElement('DIV');
+    Div.className='IdPlusPlusProjectionControlColor';
+    //内在
+    let btn1=document.createElement('DIV');
+    btn1.className='IdPlusPlusProjectionControlColorBtn';
+    let btn2=document.createElement('DIV');
+    btn2.className='IdPlusPlusProjectionControlColorBtn';
+    let btn3=document.createElement('DIV');
+    btn3.className='IdPlusPlusProjectionControlColorBtn';
+    let btn4=document.createElement('DIV');
+    btn4.className='IdPlusPlusProjectionControlColorBtn';
+    let btn5=document.createElement('DIV');
+    btn5.className='IdPlusPlusProjectionControlColorBtn';
+    let btn6=document.createElement('DIV');
+    btn6.className='IdPlusPlusProjectionControlColorBtn';
+    let btn7=document.createElement('DIV');
+    btn7.className='IdPlusPlusProjectionControlColorBtn';
+    let btn8=document.createElement('DIV');
+    btn8.className='IdPlusPlusProjectionControlColorBtn';
+    Div.appendChild(btn1);
+    Div.appendChild(btn2);
+    Div.appendChild(btn3);
+    Div.appendChild(btn4);
+    Div.appendChild(btn5);
+    Div.appendChild(btn6);
+    Div.appendChild(btn7);
+    Div.appendChild(btn8);
+    return Div;
   },
   //创建按钮,需要传递按钮名字及按钮序号，返回按钮元素
   createProjectionControlBtn:(text,num)=>{
@@ -831,18 +909,19 @@ const IdPlusPlus=Object.freeze({
     })
     //添加相应的功能
     switch (num){
-      case 1:{
+      case 1:{//调色板
         break;
       }
-      case 2:{
+      case 2:{//撤回
+        btn.addEventListener('click',()=>{IdPlusPlus.sendInstruct('removePointer');});
         break;
       }
-      case 3:{
-        btn.addEventListener('click',()=>{IdPlusPlus.delProjectionPoints();});
+      case 3:{//清空
+        btn.addEventListener('click',()=>{IdPlusPlus.sendInstruct('delProjectionPoints');});
         break;
       }
-      case 4:{
-        btn.addEventListener('click',()=>{IdPlusPlus.hideProjectionControl();});
+      case 4:{//隐藏我
+        btn.addEventListener('click',()=>{IdPlusPlus.sendInstruct('hideProjectionControl');});
         break;
       }
     }
@@ -857,7 +936,7 @@ setTimeout(function(){IdPlusPlus.addNewProjection();IdPlusPlus.listenClickAddPoi
 //在加载结束后的0.2秒之后开启自动拷贝功能
 setTimeout(function(){IdPlusPlus.clickCopyId();},200);
 //实时监听popup传递指令
-chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instruction(changes)});
+chrome.storage.onChanged.addListener(function (changes,storage){IdPlusPlus.instruction(changes);});
 //快捷键绑定-开启遮罩蒙版
 general_script.hotKeyHandler('ctrl','q',function(){IdPlusPlus.sendCommit(4);});
 //快捷键绑定-创建单点指针映射
