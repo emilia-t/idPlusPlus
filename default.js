@@ -310,10 +310,13 @@ const IdPlusPlus=Object.freeze({
   },
   //命令接收器
   instruction:(request)=>{
-    console.log("change:");
-    console.log(request);
     Object.keys(request).forEach(function (key){
       switch (key){
+        case "setPointerColor":{
+          let col=request.setPointerColor.newValue;
+          IdPlusPlus.setNextPointerColor(col);//设置点颜色属性
+          break;
+        }
         case "hideProjectionControl":{//隐藏幕布控制面板
           IdPlusPlus.hideProjectionControl();
           break;
@@ -472,6 +475,15 @@ const IdPlusPlus=Object.freeze({
   option4Off:()=>{
     //console.log("op4-off");
     IdPlusPlus.closeMask();
+  },
+  //发送一条带有数据的指令
+  sendDataInstruct:(name,price)=>{
+    switch (name){
+      case 'setPointerColor':{
+        chrome.storage.sync.set({'setPointerColor':price},function (){})
+        break;
+      }
+    }
   },
   //发送一条执行指令-立刻执行一个函数
   sendInstruct:(name)=>{
@@ -794,6 +806,10 @@ const IdPlusPlus=Object.freeze({
       }
     }
   },
+  //设置点颜色
+  setNextPointerColor:(color)=>{
+    IdPlusPlusConfig.Projection.color=color;
+  },
   //为在鼠标click后添加一个点
   listenClickAddPoint:()=>{
     document.body.addEventListener('click',(e)=>{
@@ -863,26 +879,67 @@ const IdPlusPlus=Object.freeze({
   },
   //创建一个色块，显示当前配置颜色和可选颜色
   createProjectionControlColor:()=>{
+    //设置点击效果函数
+    function eventColor(e){
+      //1清除所有点击后的效果
+      let num=e.target.parentElement.children.length;
+      for (let i=0;i<num;i++){
+        e.target.parentElement.children[i].classList.remove('IdPlusPlusProjectionControlColorBtnA');
+      }
+      //2.单独加上效果
+      e.target.classList.add('IdPlusPlusProjectionControlColorBtnA');
+    }
     //外壳
     let Div=document.createElement('DIV');
     Div.className='IdPlusPlusProjectionControlColor';
     //内在
     let btn1=document.createElement('DIV');
     btn1.className='IdPlusPlusProjectionControlColorBtn';
+    btn1.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#ff0000');});
     let btn2=document.createElement('DIV');
     btn2.className='IdPlusPlusProjectionControlColorBtn';
+    btn2.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#ffd05b');
+    });
     let btn3=document.createElement('DIV');
     btn3.className='IdPlusPlusProjectionControlColorBtn';
+    btn3.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#c6ff5b');
+    });
     let btn4=document.createElement('DIV');
     btn4.className='IdPlusPlusProjectionControlColorBtn';
+    btn4.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#5bffaa');
+    });
     let btn5=document.createElement('DIV');
     btn5.className='IdPlusPlusProjectionControlColorBtn';
+    btn5.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#5bcbff');
+    });
     let btn6=document.createElement('DIV');
     btn6.className='IdPlusPlusProjectionControlColorBtn';
+    btn6.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#5b6bff');
+    });
     let btn7=document.createElement('DIV');
     btn7.className='IdPlusPlusProjectionControlColorBtn';
+    btn7.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#fa5bff');
+    });
     let btn8=document.createElement('DIV');
     btn8.className='IdPlusPlusProjectionControlColorBtn';
+    btn8.addEventListener('click',function (e){
+      eventColor(e);
+      IdPlusPlus.sendDataInstruct('setPointerColor','#ff5b89');
+    });
     Div.appendChild(btn1);
     Div.appendChild(btn2);
     Div.appendChild(btn3);

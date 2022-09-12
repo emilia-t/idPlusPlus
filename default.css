@@ -61,7 +61,7 @@
 .IdPlusPlusProjectionAnimation002{animation: IdPlusPlusProjectionControlBtnB 0.3s forwards}
 .IdPlusPlusProjectionControlBtn:hover{background: #7aaeff}
 .IdPlusPlusProjectionControlColor{width: 80px; height:50px;flex-wrap: wrap;padding: 2px;display: flex;flex-direction: column;justify-content: center;align-items: center}
-.IdPlusPlusProjectionControlColorBtn{width: 10px;height: 10px;margin: 5px}
+.IdPlusPlusProjectionControlColorBtn{transition: 0.3s;width: 10px;height: 10px;margin: 5px}
 .IdPlusPlusProjectionControlColorBtn:nth-child(1){background: #ff0000}
 .IdPlusPlusProjectionControlColorBtn:nth-child(2){background: #ffd05b}
 .IdPlusPlusProjectionControlColorBtn:nth-child(3){background: #c6ff5b}
@@ -70,6 +70,8 @@
 .IdPlusPlusProjectionControlColorBtn:nth-child(6){background: #5b6bff}
 .IdPlusPlusProjectionControlColorBtn:nth-child(7){background: #fa5bff}
 .IdPlusPlusProjectionControlColorBtn:nth-child(8){background: #ff5b89}
+/*选中效果*/
+.IdPlusPlusProjectionControlColorBtnA{box-shadow: 2px 2px 2px #9a9a9a}
 /*点击-开启动画*/
 @keyframes IdPlusPlusProjectionControlBtnA {
   0%{box-shadow: 2px 2px 5px #999}
