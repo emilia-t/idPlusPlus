@@ -847,8 +847,8 @@ const IdPlusPlus=Object.freeze({
       let Point=document.createElement('DIV');
       Point.className='IdPlusPlusProjectionPoint';
       Point.style.background=IdPlusPlusConfig.Projection.color;
-      Point.style.left=position.x+'px';
-      Point.style.top=position.y+'px';
+      Point.style.left=(position.x-2)+'px';
+      Point.style.top=(position.y-2)+'px';
       IdPlusPlusProjection.appendChild(Point);
     }
   },
