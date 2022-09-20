@@ -253,6 +253,9 @@ var IdPlusPlusConfig={
     flash:500,//自动绘制指针的间隔单位毫秒
     pointer:[],//单点的指针，使用鼠标单机创建
     pointRap:[]//自动的连续的点
+  },
+  syncSketchpad:{
+    chromeSize:{x:null,y:null}
   }
 }
 //id++内置功能
@@ -302,9 +305,9 @@ const IdPlusPlus=Object.freeze({
         IdPlusPlus.option3Off();
       }
       if(result.option4==true){
-        IdPlusPlus.option4On();
+        IdPlusPlus.option5On();
       }else {
-        IdPlusPlus.option4Off();
+        IdPlusPlus.option5Off();
       }
     })
   },
@@ -375,6 +378,15 @@ const IdPlusPlus=Object.freeze({
           }
           break;
         }
+        case "option5":{
+          if(request.option5.newValue===true){
+            IdPlusPlus.option5On();
+          }else {
+            IdPlusPlus.option5Off();
+          }
+          break;
+        }
+
         default:{
           break;
         }
@@ -475,6 +487,16 @@ const IdPlusPlus=Object.freeze({
   option4Off:()=>{
     //console.log("op4-off");
     IdPlusPlus.closeMask();
+  },
+  //开关
+  option5On:()=>{
+    console.log("op5-on");
+    IdPlusPlus.displaySyncSketchpad();
+  },
+  //开关
+  option5Off:()=>{
+    console.log("op5-off");
+    IdPlusPlus.hideSyncSketchpad();
   },
   //发送一条带有数据的指令
   sendDataInstruct:(name,price)=>{
@@ -983,6 +1005,69 @@ const IdPlusPlus=Object.freeze({
       }
     }
     return btn;
+  },
+  //获取用户当前视窗大小
+  getChromeSize:()=>{
+    IdPlusPlusConfig.syncSketchpad.chromeSize.x=window.innerWidth;
+    IdPlusPlusConfig.syncSketchpad.chromeSize.y=window.innerHeight;
+  },
+  //生成画板
+  createSketchpad:()=>{
+    if(IdPlusPlusConfig.syncSketchpad.chromeSize.x==null || IdPlusPlusConfig.syncSketchpad.chromeSize.y==null){
+      IdPlusPlus.getChromeSize();
+    }
+    let canvas=document.createElement('CANVAS');
+    canvas.setAttribute('width',IdPlusPlusConfig.syncSketchpad.chromeSize.x);
+    canvas.setAttribute('height',IdPlusPlusConfig.syncSketchpad.chromeSize.y);
+    //添加鼠标监听
+    canvas.addEventListener('click',function (e){
+      let pos={x:e.x,y:e.y};
+      let ctx=e.target;
+      ctx=ctx.getContext("2d");
+      //路径颜色 (选填，默认黑色)
+      ctx.strokeStyle = "red"
+      //路径线宽 (选填，默认为1.0)
+      ctx.lineWidth = 1
+      //虚线路径 solidLineLength-实线长度 clearance-间隙长度 (选填)
+      ctx.setLineDash([100])
+      //定义开始坐标 startX-横坐标 startY-纵坐标 (必填)
+      ctx.moveTo(pos.x,pos.y);
+      //定义开始坐标 endX-横坐标 endY-纵坐标 (必填)
+      ctx.lineTo(pos.x+100,pos.y+100);
+      //绘制线条(必填)
+      ctx.stroke();
+    })
+    return canvas;
+  },
+  //创建同步画板
+  createSyncSketchpad:()=>{
+    let can=IdPlusPlus.createSketchpad();
+    let Div=document.createElement('DIV');
+    Div.className='IdPlusPlusSyncSketchpad';
+    Div.appendChild(can)
+    document.body.appendChild(Div);
+  },
+  //显示同步画板
+  displaySyncSketchpad:()=>{
+    let pad=document.querySelector('.IdPlusPlusSyncSketchpad');
+    if(pad==null || pad==undefined){
+      //如果不存在则创建一个
+      IdPlusPlus.createSyncSketchpad();
+      //选择
+      pad=document.querySelector('.IdPlusPlusSyncSketchpad');
+    }
+    pad.style.display='block';
+  },
+  //隐藏同步画板
+  hideSyncSketchpad:()=>{
+    let pad=document.querySelector('.IdPlusPlusSyncSketchpad');
+    if(pad==null || pad==undefined){
+      //如果不存在则创建一个
+      IdPlusPlus.createSyncSketchpad();
+      //选择
+      pad=document.querySelector('.IdPlusPlusSyncSketchpad');
+    }
+    pad.style.display='none';
   }
 })
 //应用层：
