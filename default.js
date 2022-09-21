@@ -255,7 +255,11 @@ var IdPlusPlusConfig={
     pointRap:[]//自动的连续的点
   },
   syncSketchpad:{
-    chromeSize:{x:null,y:null}
+    chromeSize:{x:null,y:null},
+    clientPos:{x:null,y:null},
+    pos:{x:null,y:null},
+    color:'#ff0000',
+    moved:false
   }
 }
 //id++内置功能
@@ -314,8 +318,23 @@ const IdPlusPlus=Object.freeze({
   //命令接收器
   instruction:(request)=>{
     Object.keys(request).forEach(function (key){
+      //syncSketchpadStart syncSketchpadMoved syncSketchpadEnd
       switch (key){
-        case "setPointerColor":{
+        case "syncSketchpadStart":{//开始同步画板,发送此指令需要同时发送鼠标位置{x:?,y:?}
+          let position=request.syncSketchpadStart.newValue;
+          IdPlusPlus.clientSyncSketchpadStart(position);
+          break;
+        }
+        case "syncSketchpadMoved":{//同步画板中,发送此指令需要同时发送鼠标位置{x:?,y:?}
+          let position=request.syncSketchpadMoved.newValue;
+          IdPlusPlus.clientSyncSketchpadMoved(position);
+          break;
+        }
+        case "syncSketchpadEnd":{//结束同步画板
+          IdPlusPlus.clientSyncSketchpadEnd();
+          break;
+        }
+        case "setPointerColor":{//同步点的颜色
           let col=request.setPointerColor.newValue;
           IdPlusPlus.setNextPointerColor(col);//设置点颜色属性
           break;
@@ -505,12 +524,26 @@ const IdPlusPlus=Object.freeze({
         chrome.storage.sync.set({'setPointerColor':price},function (){})
         break;
       }
+      //syncSketchpadStart syncSketchpadMoved syncSketchpadEnd
+      case 'syncSketchpadStart':{
+        chrome.storage.local.set({'syncSketchpadStart':price},function (){})
+        break;
+      }
+      case 'syncSketchpadMoved':{
+        chrome.storage.local.set({'syncSketchpadMoved':price},function (){})
+        break;
+      }
     }
   },
   //发送一条执行指令-立刻执行一个函数
   sendInstruct:(name)=>{
     //发送
     switch (name){
+      case 'syncSketchpadEnd':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'syncSketchpadEnd':ran},function (){})
+        break;
+      }
       case 'removePointer':{
         let ran=Math.floor(Math.random()*100000000);
         chrome.storage.sync.set({'removePointer':ran},function (){})
@@ -1011,6 +1044,51 @@ const IdPlusPlus=Object.freeze({
     IdPlusPlusConfig.syncSketchpad.chromeSize.x=window.innerWidth;
     IdPlusPlusConfig.syncSketchpad.chromeSize.y=window.innerHeight;
   },
+  //客户端同步生成画板内数据,在客户端接收到开始绘制的指令后进行此项操作,这里判断是否是发送端可以通过moved属性判断，moved为true说明鼠标操作的是当前页面
+  clientSyncSketchpadStart:(position)=>{
+    if(IdPlusPlusConfig.syncSketchpad.moved===false){
+      //1获取pos
+      let pos={x:position.x,y:position.y};
+      //2储存pos到client
+      IdPlusPlusConfig.syncSketchpad.clientPos.x=pos.x;
+      IdPlusPlusConfig.syncSketchpad.clientPos.y=pos.y;
+    }
+  },
+  clientSyncSketchpadMoved:(position)=>{
+    if(IdPlusPlusConfig.syncSketchpad.clientPos.x===null){return;}
+      if(IdPlusPlusConfig.syncSketchpad.moved===false){
+        //1获取canvas
+        let ctx=document.querySelector('.IdPlusPlusSyncSketchpad').firstChild;
+        let pos={x:position.x,y:position.y};
+        ctx=ctx.getContext("2d");
+        //路径颜色 (选填，默认黑色)
+        ctx.strokeStyle = "red"
+        //路径线宽 (选填，默认为1.0)
+        ctx.lineWidth = 1
+        //虚线路径 solidLineLength-实线长度 clearance-间隙长度 (选填)
+        ctx.setLineDash([1])
+        //定义开始坐标 startX-横坐标 startY-纵坐标 (必填)
+        ctx.moveTo(IdPlusPlusConfig.syncSketchpad.clientPos.x,IdPlusPlusConfig.syncSketchpad.clientPos.y);
+        //定义开始坐标（上一个坐标） endX-横坐标 endY-纵坐标 (必填)
+        ctx.lineTo(IdPlusPlusConfig.syncSketchpad.clientPos.x,IdPlusPlusConfig.syncSketchpad.clientPos.y);
+        //定义结束坐标（当前坐标）
+        ctx.lineTo(pos.x,pos.y)
+        //连接
+        ctx.closePath();
+        //替换开始坐标
+        IdPlusPlusConfig.syncSketchpad.clientPos.x=pos.x;
+        IdPlusPlusConfig.syncSketchpad.clientPos.y=pos.y;
+        //绘制线条(必填)
+        ctx.stroke();
+      }
+  },
+  clientSyncSketchpadEnd:()=>{
+    if(IdPlusPlusConfig.syncSketchpad.moved===false){
+      //清除数据
+      IdPlusPlusConfig.syncSketchpad.clientPos.x=null;
+      IdPlusPlusConfig.syncSketchpad.clientPos.y=null;
+    }
+  },
   //生成画板
   createSketchpad:()=>{
     if(IdPlusPlusConfig.syncSketchpad.chromeSize.x==null || IdPlusPlusConfig.syncSketchpad.chromeSize.y==null){
@@ -1019,23 +1097,53 @@ const IdPlusPlus=Object.freeze({
     let canvas=document.createElement('CANVAS');
     canvas.setAttribute('width',IdPlusPlusConfig.syncSketchpad.chromeSize.x);
     canvas.setAttribute('height',IdPlusPlusConfig.syncSketchpad.chromeSize.y);
+    ////syncSketchpadStart syncSketchpadMoved syncSketchpadEnd
     //添加鼠标监听
-    canvas.addEventListener('click',function (e){
+    canvas.addEventListener('mousedown',function (e){
+      //1启用绘制
+      IdPlusPlusConfig.syncSketchpad.moved=true;
+      IdPlusPlusConfig.syncSketchpad.pos.x=e.x;
+      IdPlusPlusConfig.syncSketchpad.pos.y=e.y;
+      //同步数据
       let pos={x:e.x,y:e.y};
-      let ctx=e.target;
-      ctx=ctx.getContext("2d");
-      //路径颜色 (选填，默认黑色)
-      ctx.strokeStyle = "red"
-      //路径线宽 (选填，默认为1.0)
-      ctx.lineWidth = 1
-      //虚线路径 solidLineLength-实线长度 clearance-间隙长度 (选填)
-      ctx.setLineDash([100])
-      //定义开始坐标 startX-横坐标 startY-纵坐标 (必填)
-      ctx.moveTo(pos.x,pos.y);
-      //定义开始坐标 endX-横坐标 endY-纵坐标 (必填)
-      ctx.lineTo(pos.x+100,pos.y+100);
-      //绘制线条(必填)
-      ctx.stroke();
+      IdPlusPlus.sendDataInstruct('syncSketchpadStart',pos);
+    })
+    canvas.addEventListener('mousemove',function (e){
+      if(IdPlusPlusConfig.syncSketchpad.moved){
+        if(IdPlusPlusConfig.syncSketchpad.pos.x!==null){
+          let pos={x:e.x,y:e.y};
+          let ctx=e.target;
+          ctx=ctx.getContext("2d");
+          //路径颜色 (选填，默认黑色)
+          ctx.strokeStyle = "red"
+          //路径线宽 (选填，默认为1.0)
+          ctx.lineWidth = 1
+          //虚线路径 solidLineLength-实线长度 clearance-间隙长度 (选填)
+          ctx.setLineDash([1])
+          //定义开始坐标 startX-横坐标 startY-纵坐标 (必填)
+          ctx.moveTo(IdPlusPlusConfig.syncSketchpad.pos.x,IdPlusPlusConfig.syncSketchpad.pos.y);
+          //定义开始坐标（上一个坐标） endX-横坐标 endY-纵坐标 (必填)
+          ctx.lineTo(IdPlusPlusConfig.syncSketchpad.pos.x,IdPlusPlusConfig.syncSketchpad.pos.y);
+          //定义结束坐标（当前坐标）
+          ctx.lineTo(pos.x,pos.y)
+          //连接
+          ctx.closePath();
+          //替换开始坐标
+          IdPlusPlusConfig.syncSketchpad.pos.x=pos.x;
+          IdPlusPlusConfig.syncSketchpad.pos.y=pos.y;
+          //绘制线条(必填)
+          ctx.stroke();
+          //同步数据
+          IdPlusPlus.sendDataInstruct('syncSketchpadMoved',pos);
+        }
+      }
+    })
+    canvas.addEventListener('mouseup',function (e){
+      IdPlusPlusConfig.syncSketchpad.moved=false;
+      IdPlusPlusConfig.syncSketchpad.pos.x=null;
+      IdPlusPlusConfig.syncSketchpad.pos.y=null;
+      //同步数据
+      IdPlusPlus.sendInstruct('syncSketchpadEnd');
     })
     return canvas;
   },
