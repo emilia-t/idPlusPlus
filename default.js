@@ -255,11 +255,13 @@ var IdPlusPlusConfig={
     pointRap:[]//自动的连续的点
   },
   syncSketchpad:{
-    chromeSize:{x:null,y:null},
-    clientPos:{x:null,y:null},
-    pos:{x:null,y:null},
-    color:'#ff0000',
-    moved:false
+    chromeSize:{x:null,y:null},//浏览器视窗大小
+    clientPos:{x:null,y:null},//接收端用的起点xy
+    pos:{x:null,y:null},//本端用的xy
+    color:'#ff0000',//画笔颜色
+    moved:false,//本端是否在绘制
+    palette:['#ff0000','#ffd05b','#c6ff5b','#5bffaa','#5bcbff','#5b6bff','#fa5bff','#ff5b89'],//默认的几种颜色
+    snapshot:[]//存储快照的
   }
 }
 //id++内置功能
@@ -318,8 +320,33 @@ const IdPlusPlus=Object.freeze({
   //命令接收器
   instruction:(request)=>{
     Object.keys(request).forEach(function (key){
-      //syncSketchpadStart syncSketchpadMoved syncSketchpadEnd
+      //syncSketchpadStart syncSketchpadMoved syncSketchpadEnd  setSyncSketchpadColor syncSketchpadUndo syncSketchpadClear syncSketchpadControlHide syncSketchpadPeek syncSketchpadPeekDone
       switch (key){
+        case "syncSketchpadPeekDone":{
+          IdPlusPlus.syncSketchpadPeekDone();
+          break;
+        }
+        case "syncSketchpadPeekUp":{
+          IdPlusPlus.syncSketchpadPeekUp();
+          break;
+        }
+        case "syncSketchpadControlHide":{//隐藏控制面板
+          IdPlusPlus.syncSketchpadControlHide();
+          break;
+        }
+        case "syncSketchpadClear":{//清空画板
+          IdPlusPlus.syncSketchpadClear();
+          break;
+        }
+        case "syncSketchpadUndo":{//撤回画板
+          IdPlusPlus.syncSketchpadUndo();
+          break;
+        }
+        case "setSyncSketchpadColor":{//设置画板颜色
+          let col=request.setSyncSketchpadColor.newValue;
+          IdPlusPlus.clientSetSyncSketchpadColor(col);
+          break;
+        }
         case "syncSketchpadStart":{//开始同步画板,发送此指令需要同时发送鼠标位置{x:?,y:?}
           let position=request.syncSketchpadStart.newValue;
           IdPlusPlus.clientSyncSketchpadStart(position);
@@ -405,7 +432,6 @@ const IdPlusPlus=Object.freeze({
           }
           break;
         }
-
         default:{
           break;
         }
@@ -509,17 +535,19 @@ const IdPlusPlus=Object.freeze({
   },
   //开关
   option5On:()=>{
-    console.log("op5-on");
     IdPlusPlus.displaySyncSketchpad();
   },
   //开关
   option5Off:()=>{
-    console.log("op5-off");
     IdPlusPlus.hideSyncSketchpad();
   },
   //发送一条带有数据的指令
   sendDataInstruct:(name,price)=>{
     switch (name){
+      case 'setSyncSketchpadColor':{
+        chrome.storage.sync.set({'setSyncSketchpadColor':price},function (){})
+        break;
+      }
       case 'setPointerColor':{
         chrome.storage.sync.set({'setPointerColor':price},function (){})
         break;
@@ -539,6 +567,31 @@ const IdPlusPlus=Object.freeze({
   sendInstruct:(name)=>{
     //发送
     switch (name){
+      case 'syncSketchpadPeekDone':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'syncSketchpadPeekDone':ran},function (){})
+        break;
+      }
+      case 'syncSketchpadPeekUp':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'syncSketchpadPeekUp':ran},function (){})
+        break;
+      }
+      case 'syncSketchpadControlHide':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'syncSketchpadControlHide':ran},function (){})
+        break;
+      }
+      case 'syncSketchpadClear':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'syncSketchpadClear':ran},function (){})
+        break;
+      }
+      case 'syncSketchpadUndo':{
+        let ran=Math.floor(Math.random()*100000000);
+        chrome.storage.sync.set({'syncSketchpadUndo':ran},function (){})
+        break;
+      }
       case 'syncSketchpadEnd':{
         let ran=Math.floor(Math.random()*100000000);
         chrome.storage.sync.set({'syncSketchpadEnd':ran},function (){})
@@ -1039,6 +1092,127 @@ const IdPlusPlus=Object.freeze({
     }
     return btn;
   },
+  //创建同步画板的操作box
+  createSyncSketchpadControl:()=>{
+    let newDiv=document.createElement('DIV');
+    newDiv.className='IdPlusPlusSyncSketchpadControl';
+    //1添加颜色按钮
+    for(let i=0;i<IdPlusPlusConfig.syncSketchpad.palette.length;i++){
+      let cbt=IdPlusPlus.createSyncSketchpadControlColorBtn(IdPlusPlusConfig.syncSketchpad.palette[i]);
+      newDiv.appendChild(cbt);
+    }
+    //2撤回按钮
+    let newBt=document.createElement('DIV');
+    newBt.className='IdPlusPlusSyncSketchpadBtn';
+    newBt.innerText="撤回"
+    newBt.addEventListener('click',function (){
+      IdPlusPlus.sendInstruct('syncSketchpadUndo');
+    });
+    newDiv.appendChild(newBt);
+    //3清空按钮
+    let newBd=document.createElement('DIV');
+    newBd.className='IdPlusPlusSyncSketchpadBtn';
+    newBd.innerText="清空"
+    newBd.addEventListener('click',function (){
+      IdPlusPlus.sendInstruct('syncSketchpadClear');
+    });
+    newDiv.appendChild(newBd);
+    //4隐藏我按钮
+    let newBk=document.createElement('DIV');
+    newBk.className='IdPlusPlusSyncSketchpadBtn';
+    newBk.innerText="克己"
+    newBk.addEventListener('click',function (){
+      IdPlusPlus.sendInstruct('syncSketchpadControlHide');
+    });
+    newDiv.appendChild(newBk);
+    //5穿透按钮
+    let newBq=document.createElement('DIV');
+    newBq.className='IdPlusPlusSyncSketchpadBtn';
+    newBq.innerText="穿透"
+    newBq.addEventListener('click',function (){
+      IdPlusPlus.sendInstruct('syncSketchpadPeekUp');
+    });
+    newDiv.appendChild(newBq);
+    //5反穿透按钮
+    let newBl=document.createElement('DIV');
+    newBl.className='IdPlusPlusSyncSketchpadBtn';
+    newBl.innerText="覆盖"
+    newBl.addEventListener('click',function (){
+      IdPlusPlus.sendInstruct('syncSketchpadPeekDone');
+    });
+    newDiv.appendChild(newBl);
+    //
+    newDiv.addEventListener('click',function (){
+      //检查控制面板是否打开了
+      try{
+        let padControl=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+        padControl.style.display='flex';
+        padControl.style.left='calc(100% - 78px)';
+      }catch (e) {
+
+      }
+    })
+    //5完成
+    document.body.appendChild(newDiv);
+  },
+  createSyncSketchpadControlColorBtn:(color)=>{
+    let newDiv=document.createElement('DIV');
+    newDiv.className="IdPlusPlusSyncSketchpadControlColorBtn";
+    newDiv.style.background=color;
+    //设置事件
+    newDiv.addEventListener('click',()=>{IdPlusPlus.setSyncSketchpadColor(color);});
+    return newDiv;
+  },
+  //画板撤回操作
+  syncSketchpadUndo:()=>{
+    if(IdPlusPlusConfig.syncSketchpad.snapshot.length<=0){
+      general_script.alert_tips("无可再退，尝试清空吧");
+      return false;
+    }
+    let ctx=document.querySelector('.IdPlusPlusSyncSketchpad').firstChild;
+    let ctxData=ctx.getContext("2d");
+    ctxData.clearRect(0,0,ctx.width,ctx.height);
+    ctxData.putImageData(IdPlusPlusConfig.syncSketchpad.snapshot.pop(),0,0)
+  },
+  //穿透，peek后面的id
+  syncSketchpadPeekUp:()=>{
+    try{
+      let pad=document.querySelector('.IdPlusPlusSyncSketchpad');
+      pad.setAttribute('style','pointer-events:none');
+      pad.firstChild.setAttribute('style','pointer-events:none');
+    }catch (e){
+
+    }
+  },
+  //不穿透
+  syncSketchpadPeekDone:()=>{
+    try {
+      let pad=document.querySelector('.IdPlusPlusSyncSketchpad');
+      pad.setAttribute('style','pointer-events:auto');
+      pad.firstChild.setAttribute('style','pointer-events:auto');
+    }catch (e) {
+
+    }
+  },
+  //隐藏控制面板操作
+  syncSketchpadControlHide:()=>{
+    let control=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+    control.style.left='99.5%';
+  },
+  //画板清空操作
+  syncSketchpadClear:()=>{
+    let ctx=document.querySelector('.IdPlusPlusSyncSketchpad').firstChild;
+    ctx.width=ctx.width;
+  },
+  //设置画笔颜色
+  setSyncSketchpadColor:(color)=>{
+    IdPlusPlusConfig.syncSketchpad.color=color;
+    //同步设置
+    IdPlusPlus.sendDataInstruct('setSyncSketchpadColor',color);
+  },
+  clientSetSyncSketchpadColor:(color)=>{
+    IdPlusPlusConfig.syncSketchpad.color=color;
+  },
   //获取用户当前视窗大小
   getChromeSize:()=>{
     IdPlusPlusConfig.syncSketchpad.chromeSize.x=window.innerWidth;
@@ -1047,39 +1221,57 @@ const IdPlusPlus=Object.freeze({
   //客户端同步生成画板内数据,在客户端接收到开始绘制的指令后进行此项操作,这里判断是否是发送端可以通过moved属性判断，moved为true说明鼠标操作的是当前页面
   clientSyncSketchpadStart:(position)=>{
     if(IdPlusPlusConfig.syncSketchpad.moved===false){
+      //保存之前的快照
+      let ctx=document.querySelector('.IdPlusPlusSyncSketchpad').firstChild;
+      let ctxData=ctx.getContext("2d");
+      //保存快照
+      IdPlusPlusConfig.syncSketchpad.snapshot.push(ctxData.getImageData(0,0,parseInt(ctx.width),parseInt(ctx.height)));
+      //检查控制面板是否打开了
+      let padControl=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+      if(padControl==null || padControl==undefined){
+        IdPlusPlus.createSyncSketchpadControl();
+        padControl=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+      }
+      padControl.style.display='flex';
+      padControl.style.left='calc(100% - 78px)';
       //1获取pos
       let pos={x:position.x,y:position.y};
       //2储存pos到client
       IdPlusPlusConfig.syncSketchpad.clientPos.x=pos.x;
       IdPlusPlusConfig.syncSketchpad.clientPos.y=pos.y;
+      //清空并载入最近的快照
+      if(IdPlusPlusConfig.syncSketchpad.snapshot.length>=1){
+        ctx.width=ctx.width;
+        ctxData.putImageData(IdPlusPlusConfig.syncSketchpad.snapshot[IdPlusPlusConfig.syncSketchpad.snapshot.length-1],0,0)
+      }
     }
   },
   clientSyncSketchpadMoved:(position)=>{
     if(IdPlusPlusConfig.syncSketchpad.clientPos.x===null){return;}
       if(IdPlusPlusConfig.syncSketchpad.moved===false){
         //1获取canvas
-        let ctx=document.querySelector('.IdPlusPlusSyncSketchpad').firstChild;
         let pos={x:position.x,y:position.y};
-        ctx=ctx.getContext("2d");
-        //路径颜色 (选填，默认黑色)
-        ctx.strokeStyle = "red"
-        //路径线宽 (选填，默认为1.0)
-        ctx.lineWidth = 1
-        //虚线路径 solidLineLength-实线长度 clearance-间隙长度 (选填)
-        ctx.setLineDash([1])
-        //定义开始坐标 startX-横坐标 startY-纵坐标 (必填)
-        ctx.moveTo(IdPlusPlusConfig.syncSketchpad.clientPos.x,IdPlusPlusConfig.syncSketchpad.clientPos.y);
-        //定义开始坐标（上一个坐标） endX-横坐标 endY-纵坐标 (必填)
-        ctx.lineTo(IdPlusPlusConfig.syncSketchpad.clientPos.x,IdPlusPlusConfig.syncSketchpad.clientPos.y);
-        //定义结束坐标（当前坐标）
-        ctx.lineTo(pos.x,pos.y)
+        let ctx=document.querySelector('.IdPlusPlusSyncSketchpad').firstChild;
+        let ctxData=ctx.getContext("2d");
+        //路径颜色
+        ctxData.strokeStyle = IdPlusPlusConfig.syncSketchpad.color;
+        //路径线宽
+        ctxData.lineWidth = 1;
+        //长度
+        ctxData.setLineDash([1]);
+        //定义开始坐标
+        ctxData.moveTo(IdPlusPlusConfig.syncSketchpad.clientPos.x,IdPlusPlusConfig.syncSketchpad.clientPos.y);
+        //定义开始坐标
+        ctxData.lineTo(IdPlusPlusConfig.syncSketchpad.clientPos.x,IdPlusPlusConfig.syncSketchpad.clientPos.y);
+        //定义结束坐标
+        ctxData.lineTo(pos.x,pos.y)
         //连接
-        ctx.closePath();
+        ctxData.closePath();
         //替换开始坐标
         IdPlusPlusConfig.syncSketchpad.clientPos.x=pos.x;
         IdPlusPlusConfig.syncSketchpad.clientPos.y=pos.y;
         //绘制线条(必填)
-        ctx.stroke();
+        ctxData.stroke();
       }
   },
   clientSyncSketchpadEnd:()=>{
@@ -1089,7 +1281,7 @@ const IdPlusPlus=Object.freeze({
       IdPlusPlusConfig.syncSketchpad.clientPos.y=null;
     }
   },
-  //生成画板
+  //生成画板-画板自带监听
   createSketchpad:()=>{
     if(IdPlusPlusConfig.syncSketchpad.chromeSize.x==null || IdPlusPlusConfig.syncSketchpad.chromeSize.y==null){
       IdPlusPlus.getChromeSize();
@@ -1104,6 +1296,23 @@ const IdPlusPlus=Object.freeze({
       IdPlusPlusConfig.syncSketchpad.moved=true;
       IdPlusPlusConfig.syncSketchpad.pos.x=e.x;
       IdPlusPlusConfig.syncSketchpad.pos.y=e.y;
+      let ctx=e.target;
+      let ctxData=ctx.getContext("2d")
+      //检查控制面板是否打开了
+      let padControl=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+      if(padControl==null || padControl==undefined){
+        IdPlusPlus.createSyncSketchpadControl();
+        padControl=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+      }
+      padControl.style.display='flex';
+      padControl.style.left='calc(100% - 78px)';
+      //保存快照
+      IdPlusPlusConfig.syncSketchpad.snapshot.push(ctxData.getImageData(0,0,parseInt(ctx.width),parseInt(ctx.height)));
+      if(IdPlusPlusConfig.syncSketchpad.snapshot.length>=1){
+        //清空并载入最近的快照
+        ctx.width=ctx.width;
+        ctxData.putImageData(IdPlusPlusConfig.syncSketchpad.snapshot[IdPlusPlusConfig.syncSketchpad.snapshot.length-1],0,0)
+      }
       //同步数据
       let pos={x:e.x,y:e.y};
       IdPlusPlus.sendDataInstruct('syncSketchpadStart',pos);
@@ -1113,35 +1322,42 @@ const IdPlusPlus=Object.freeze({
         if(IdPlusPlusConfig.syncSketchpad.pos.x!==null){
           let pos={x:e.x,y:e.y};
           let ctx=e.target;
-          ctx=ctx.getContext("2d");
-          //路径颜色 (选填，默认黑色)
-          ctx.strokeStyle = "red"
-          //路径线宽 (选填，默认为1.0)
-          ctx.lineWidth = 1
-          //虚线路径 solidLineLength-实线长度 clearance-间隙长度 (选填)
-          ctx.setLineDash([1])
-          //定义开始坐标 startX-横坐标 startY-纵坐标 (必填)
-          ctx.moveTo(IdPlusPlusConfig.syncSketchpad.pos.x,IdPlusPlusConfig.syncSketchpad.pos.y);
-          //定义开始坐标（上一个坐标） endX-横坐标 endY-纵坐标 (必填)
-          ctx.lineTo(IdPlusPlusConfig.syncSketchpad.pos.x,IdPlusPlusConfig.syncSketchpad.pos.y);
+          let ctxData=ctx.getContext("2d");
+          //路径颜色
+          ctxData.strokeStyle = IdPlusPlusConfig.syncSketchpad.color;
+          //路径线宽
+          ctxData.lineWidth = 1
+          //虚线路径
+          ctxData.setLineDash([1])
+          //定义开始坐标
+          ctxData.moveTo(IdPlusPlusConfig.syncSketchpad.pos.x,IdPlusPlusConfig.syncSketchpad.pos.y);
+          //定义开始坐标
+          ctxData.lineTo(IdPlusPlusConfig.syncSketchpad.pos.x,IdPlusPlusConfig.syncSketchpad.pos.y);
           //定义结束坐标（当前坐标）
-          ctx.lineTo(pos.x,pos.y)
+          ctxData.lineTo(pos.x,pos.y)
           //连接
-          ctx.closePath();
+          ctxData.closePath();
           //替换开始坐标
           IdPlusPlusConfig.syncSketchpad.pos.x=pos.x;
           IdPlusPlusConfig.syncSketchpad.pos.y=pos.y;
           //绘制线条(必填)
-          ctx.stroke();
+          ctxData.stroke();
           //同步数据
           IdPlusPlus.sendDataInstruct('syncSketchpadMoved',pos);
         }
       }
     })
+    //重绘：ctx.clearRect(x,y,x2,y2)
+    //使用快照，将每次操作保存在本页面的栈中，需要复原时推出上一个快照
     canvas.addEventListener('mouseup',function (e){
       IdPlusPlusConfig.syncSketchpad.moved=false;
       IdPlusPlusConfig.syncSketchpad.pos.x=null;
       IdPlusPlusConfig.syncSketchpad.pos.y=null;
+      //let ctx=e.target;
+      //let ctxData=ctx.getContext("2d")
+      //保存快照-因为当IdPlusPlusConfig.syncSketchpad.moved=false之后去同步数据时,本身也会受到影响，此时会多出一个快照
+      //客户端的一方不主动保存快照
+      //IdPlusPlusConfig.syncSketchpad.snapshot.push(ctxData.getImageData(0,0,parseInt(ctx.width),parseInt(ctx.height)));
       //同步数据
       IdPlusPlus.sendInstruct('syncSketchpadEnd');
     })
@@ -1165,6 +1381,12 @@ const IdPlusPlus=Object.freeze({
       pad=document.querySelector('.IdPlusPlusSyncSketchpad');
     }
     pad.style.display='block';
+    let con=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+    if(con==null || con==undefined){
+      IdPlusPlus.createSyncSketchpadControl();
+      con=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+    }
+    con.style.display='flex';
   },
   //隐藏同步画板
   hideSyncSketchpad:()=>{
@@ -1176,6 +1398,14 @@ const IdPlusPlus=Object.freeze({
       pad=document.querySelector('.IdPlusPlusSyncSketchpad');
     }
     pad.style.display='none';
+    let con=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+    if(con==null || con==undefined){
+      //如果不存在则创建一个
+      IdPlusPlus.createSyncSketchpadControl();
+      //选择
+      con=document.querySelector('.IdPlusPlusSyncSketchpadControl');
+    }
+    con.style.display='none';
   }
 })
 //应用层：
